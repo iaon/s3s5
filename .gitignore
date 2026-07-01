@@ -1,0 +1,10 @@
+/bin/
+/dist/
+/coverage.out
+/*.test
+/.env
+/.env.*
+!/examples/.env.example
+/tmp/
+/.cache/
+*.log

@@ -1,0 +1,12 @@
+# Project-scoped Codex defaults for the s3s5 MVP.
+# Keep expensive model use concentrated in the root session and specialist review agents.
+model = "gpt-5.5"
+model_reasoning_effort = "high"
+
+[features]
+multi_agent = true
+
+[agents]
+max_threads = 6
+max_depth = 1
+job_max_runtime_seconds = 1800
