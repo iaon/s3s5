@@ -11,6 +11,7 @@ import (
 )
 
 type Common struct {
+	Provider         string
 	Bucket           string
 	Prefix           string
 	Region           string
@@ -28,6 +29,7 @@ type Common struct {
 }
 
 func AddCommonFlags(fs *flag.FlagSet, c *Common) {
+	fs.StringVar(&c.Provider, "provider", getenv("S3S5_PROVIDER", "aws"), "S3 provider preset: aws, yandex, minio, custom")
 	fs.StringVar(&c.Bucket, "bucket", getenv("S3S5_BUCKET", ""), "S3 bucket name")
 	fs.StringVar(&c.Prefix, "prefix", getenv("S3S5_PREFIX", "s3s5"), "S3 key prefix")
 	fs.StringVar(&c.Region, "region", firstEnv("S3S5_REGION", "AWS_REGION", "us-east-1"), "S3 region")
@@ -44,6 +46,11 @@ func AddCommonFlags(fs *flag.FlagSet, c *Common) {
 }
 
 func (c *Common) Finalize(requireBucket bool) error {
+	c.Provider = strings.ToLower(strings.TrimSpace(c.Provider))
+	if c.Provider == "" {
+		c.Provider = "aws"
+	}
+	c.applyProviderDefaults()
 	c.Prefix = strings.Trim(c.Prefix, "/")
 	if c.Prefix == "" {
 		c.Prefix = "s3s5"
@@ -67,6 +74,37 @@ func (c *Common) Finalize(requireBucket bool) error {
 		}
 	}
 	return nil
+}
+
+func (c *Common) applyProviderDefaults() {
+	switch c.Provider {
+	case "yandex", "yc", "yandex-cloud", "yandexcloud":
+		c.Provider = "yandex"
+		if c.Endpoint == "" {
+			c.Endpoint = "https://storage.yandexcloud.net"
+		}
+		if c.Region == "" || c.Region == "us-east-1" || strings.HasPrefix(c.Region, "ru-central1-") {
+			c.Region = "ru-central1"
+		}
+		c.ForcePathStyle = true
+	case "minio":
+		if c.Endpoint == "" {
+			c.Endpoint = "http://127.0.0.1:9000"
+		}
+		if c.Region == "" {
+			c.Region = "us-east-1"
+		}
+		c.ForcePathStyle = true
+	case "custom":
+		if c.Endpoint == "" {
+			// Leave endpoint validation to the S3 store so tests can construct partial configs.
+			return
+		}
+	case "aws":
+		if c.Region == "" {
+			c.Region = "us-east-1"
+		}
+	}
 }
 
 func getenv(key, fallback string) string {

@@ -16,8 +16,10 @@ import (
 )
 
 type report struct {
+	Provider string        `json:"provider"`
 	Bucket   string        `json:"bucket"`
 	Prefix   string        `json:"prefix"`
+	Region   string        `json:"region"`
 	Endpoint string        `json:"endpoint,omitempty"`
 	Crypto   string        `json:"crypto"`
 	Latency  time.Duration `json:"latency"`
@@ -51,6 +53,7 @@ func main() {
 		fatal(err)
 	}
 	store, err := s3store.New(s3store.Config{
+		Provider:       common.Provider,
 		Bucket:         common.Bucket,
 		Region:         common.Region,
 		Endpoint:       common.Endpoint,
@@ -96,7 +99,7 @@ func runDoctor(ctx context.Context, c config.Common, codec s3crypto.Codec, store
 	if !codec.Enabled() {
 		cryptoName = "disabled"
 	}
-	rep := report{Bucket: c.Bucket, Prefix: c.Prefix, Endpoint: c.Endpoint, Crypto: cryptoName, Rounds: rounds}
+	rep := report{Provider: c.Provider, Bucket: c.Bucket, Prefix: c.Prefix, Region: c.Region, Endpoint: c.Endpoint, Crypto: cryptoName, Rounds: rounds}
 	sessionID, err := protocol.NewSessionID()
 	if err != nil {
 		rep.Error = err.Error()

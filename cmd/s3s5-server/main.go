@@ -49,6 +49,7 @@ func main() {
 		fatal(err)
 	}
 	store, err := s3store.New(s3store.Config{
+		Provider:       common.Provider,
 		Bucket:         common.Bucket,
 		Region:         common.Region,
 		Endpoint:       common.Endpoint,

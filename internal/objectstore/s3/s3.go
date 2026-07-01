@@ -21,6 +21,7 @@ import (
 )
 
 type Config struct {
+	Provider        string
 	Bucket          string
 	Region          string
 	Endpoint        string
@@ -39,22 +40,61 @@ func New(cfg Config) (*Store, error) {
 	if cfg.Bucket == "" {
 		return nil, errors.New("bucket is required")
 	}
-	if cfg.Region == "" {
-		cfg.Region = "us-east-1"
-	}
+	applyProviderDefaults(&cfg)
 	if cfg.AccessKeyID == "" {
-		cfg.AccessKeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+		cfg.AccessKeyID = firstEnv("S3S5_ACCESS_KEY_ID", "AWS_ACCESS_KEY_ID", "YC_ACCESS_KEY_ID")
 	}
 	if cfg.SecretAccessKey == "" {
-		cfg.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+		cfg.SecretAccessKey = firstEnv("S3S5_SECRET_ACCESS_KEY", "AWS_SECRET_ACCESS_KEY", "YC_SECRET_ACCESS_KEY")
 	}
 	if cfg.SessionToken == "" {
-		cfg.SessionToken = os.Getenv("AWS_SESSION_TOKEN")
+		cfg.SessionToken = firstEnv("S3S5_SESSION_TOKEN", "AWS_SESSION_TOKEN", "YC_SESSION_TOKEN")
 	}
 	if cfg.AccessKeyID == "" || cfg.SecretAccessKey == "" {
-		return nil, errors.New("AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required")
+		return nil, errors.New("S3 credentials are required: set S3S5_ACCESS_KEY_ID/S3S5_SECRET_ACCESS_KEY or AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY")
 	}
 	return &Store{cfg: cfg, client: &http.Client{Timeout: 60 * time.Second}}, nil
+}
+
+func applyProviderDefaults(cfg *Config) {
+	cfg.Provider = strings.ToLower(strings.TrimSpace(cfg.Provider))
+	if cfg.Provider == "" {
+		cfg.Provider = "aws"
+	}
+	switch cfg.Provider {
+	case "aws":
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+	case "yandex", "yc", "yandex-cloud", "yandexcloud":
+		cfg.Provider = "yandex"
+		if cfg.Endpoint == "" {
+			cfg.Endpoint = "https://storage.yandexcloud.net"
+		}
+		if cfg.Region == "" || cfg.Region == "us-east-1" || strings.HasPrefix(cfg.Region, "ru-central1-") {
+			cfg.Region = "ru-central1"
+		}
+		cfg.ForcePathStyle = true
+	case "minio":
+		if cfg.Endpoint == "" {
+			cfg.Endpoint = "http://127.0.0.1:9000"
+		}
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+		cfg.ForcePathStyle = true
+	case "custom":
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+	default:
+		if cfg.Region == "" {
+			cfg.Region = "us-east-1"
+		}
+	}
+	if strings.Contains(cfg.Bucket, ".") && cfg.Endpoint != "" {
+		cfg.ForcePathStyle = true
+	}
 }
 
 func (s *Store) PutObject(ctx context.Context, key string, data []byte, opts objectstore.PutOptions) error {
@@ -376,4 +416,13 @@ func hmacSHA256(key, data []byte) []byte {
 	m := hmac.New(sha256.New, key)
 	m.Write(data)
 	return m.Sum(nil)
+}
+
+func firstEnv(keys ...string) string {
+	for _, key := range keys {
+		if v := os.Getenv(key); v != "" {
+			return v
+		}
+	}
+	return ""
 }

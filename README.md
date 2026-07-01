@@ -51,6 +51,7 @@ See:
 Set a pre-shared key and the S3 variables first:
 
 ```bash
+export S3S5_PROVIDER=aws
 export AWS_ACCESS_KEY_ID=...
 export AWS_SECRET_ACCESS_KEY=...
 export AWS_REGION=us-east-1
@@ -84,20 +85,36 @@ MinIO is useful for local development because it avoids AWS request charges and 
 Typical environment:
 
 ```bash
+export S3S5_PROVIDER=minio
 export AWS_ACCESS_KEY_ID=minioadmin
 export AWS_SECRET_ACCESS_KEY=minioadmin
-export AWS_REGION=us-east-1
 export S3S5_BUCKET=s3s5
 export S3S5_PREFIX=s3s5-dev
 export S3S5_PSK='use-a-long-random-passphrase'
-export S3S5_ENDPOINT=http://127.0.0.1:9000
-export S3S5_FORCE_PATH_STYLE=true
 ```
 
 With MinIO running locally, start the server and client with the same bucket, prefix, and PSK. The `doctor` command should then verify put/head/get/list/delete behavior against the same endpoint.
 When the server is expected to forward traffic, include an explicit allow policy such as `--allow-target example.com:443`; use `--allow-unrestricted-egress` only in fully controlled environments.
 
 To clear a test prefix with the doctor CLI, use `--cleanup-prefix`.
+
+## Yandex Object Storage
+
+Yandex Cloud is supported with a provider preset:
+
+```bash
+export S3S5_PROVIDER=yandex
+export AWS_ACCESS_KEY_ID=<yandex static key id>
+export AWS_SECRET_ACCESS_KEY=<yandex static secret>
+export S3S5_REGION=ru-central1
+export S3S5_BUCKET=your-bucket
+export S3S5_PSK='use-a-long-random-passphrase'
+./scripts/yandex-s3-smoke.sh
+```
+
+The preset uses `https://storage.yandexcloud.net`, path-style URLs, and signing region `ru-central1`. If `AWS_REGION=ru-central1-a` is present, the Yandex preset normalizes it to `ru-central1`.
+
+For another S3-compatible provider, use `S3S5_PROVIDER=custom` with `S3S5_ENDPOINT`, `S3S5_REGION`, and `S3S5_FORCE_PATH_STYLE=true` when the provider requires path-style URLs.
 
 ## Real S3 caveats
 

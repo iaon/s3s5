@@ -13,6 +13,7 @@ Treat `~/s3socks/File-Tunnel`, `~/s3socks/hev-socks5-server`, and `~/s3socks/soc
 - `make test`: wrapper for `go test ./...`.
 - `make test-race`: runs the Go race detector.
 - `make minio-up`, `make minio-test`, `make minio-down`: start MinIO, run the S3-compatible doctor smoke test, and stop services.
+- `make yandex-s3-smoke`: run the doctor smoke test against Yandex Object Storage using `S3S5_PROVIDER=yandex`.
 - `make clean`: removes generated build output.
 
 ## Coding Style & Naming Conventions

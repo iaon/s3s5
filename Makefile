@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint minio-up minio-test minio-down clean
+.PHONY: build test test-race lint minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -27,6 +27,9 @@ minio-test:
 
 minio-down:
 	./scripts/minio-down.sh
+
+yandex-s3-smoke:
+	./scripts/yandex-s3-smoke.sh
 
 clean:
 	rm -rf bin coverage.out
