@@ -31,6 +31,31 @@ func TestYandexProviderDefaults(t *testing.T) {
 	}
 }
 
+func TestYandexProviderAutoDetectedFromRegion(t *testing.T) {
+	store, err := New(Config{
+		Bucket:          "iaon-test-bucket",
+		Region:          "ru-central1-a",
+		AccessKeyID:     "test-key",
+		SecretAccessKey: "test-secret",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if store.cfg.Provider != "yandex" {
+		t.Fatalf("provider = %q", store.cfg.Provider)
+	}
+	if store.cfg.Region != "ru-central1" {
+		t.Fatalf("region = %q", store.cfg.Region)
+	}
+	u, err := store.objectURL("prefix/object.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := u.String(), "https://storage.yandexcloud.net/iaon-test-bucket/prefix/object.txt"; got != want {
+		t.Fatalf("object URL = %q, want %q", got, want)
+	}
+}
+
 func TestAWSProviderDefaultURL(t *testing.T) {
 	store, err := New(Config{
 		Provider:        "aws",

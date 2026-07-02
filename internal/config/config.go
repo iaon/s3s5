@@ -29,7 +29,7 @@ type Common struct {
 }
 
 func AddCommonFlags(fs *flag.FlagSet, c *Common) {
-	fs.StringVar(&c.Provider, "provider", getenv("S3S5_PROVIDER", "aws"), "S3 provider preset: aws, yandex, minio, custom")
+	fs.StringVar(&c.Provider, "provider", getenv("S3S5_PROVIDER", ""), "S3 provider preset: aws, yandex, minio, custom; auto-detected when omitted")
 	fs.StringVar(&c.Bucket, "bucket", getenv("S3S5_BUCKET", ""), "S3 bucket name")
 	fs.StringVar(&c.Prefix, "prefix", getenv("S3S5_PREFIX", "s3s5"), "S3 key prefix")
 	fs.StringVar(&c.Region, "region", firstEnv("S3S5_REGION", "AWS_REGION", "us-east-1"), "S3 region")
@@ -48,7 +48,7 @@ func AddCommonFlags(fs *flag.FlagSet, c *Common) {
 func (c *Common) Finalize(requireBucket bool) error {
 	c.Provider = strings.ToLower(strings.TrimSpace(c.Provider))
 	if c.Provider == "" {
-		c.Provider = "aws"
+		c.Provider = inferProvider(c.Region, c.Endpoint)
 	}
 	c.applyProviderDefaults()
 	c.Prefix = strings.Trim(c.Prefix, "/")
@@ -104,6 +104,21 @@ func (c *Common) applyProviderDefaults() {
 		if c.Region == "" {
 			c.Region = "us-east-1"
 		}
+	}
+}
+
+func inferProvider(region, endpoint string) string {
+	region = strings.ToLower(strings.TrimSpace(region))
+	endpoint = strings.ToLower(strings.TrimSpace(endpoint))
+	switch {
+	case strings.Contains(endpoint, "storage.yandexcloud.net"):
+		return "yandex"
+	case strings.HasPrefix(region, "ru-central1"):
+		return "yandex"
+	case strings.Contains(endpoint, "127.0.0.1") || strings.Contains(endpoint, "localhost"):
+		return "minio"
+	default:
+		return "aws"
 	}
 }
 

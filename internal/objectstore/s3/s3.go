@@ -59,7 +59,7 @@ func New(cfg Config) (*Store, error) {
 func applyProviderDefaults(cfg *Config) {
 	cfg.Provider = strings.ToLower(strings.TrimSpace(cfg.Provider))
 	if cfg.Provider == "" {
-		cfg.Provider = "aws"
+		cfg.Provider = inferProvider(cfg.Region, cfg.Endpoint)
 	}
 	switch cfg.Provider {
 	case "aws":
@@ -94,6 +94,21 @@ func applyProviderDefaults(cfg *Config) {
 	}
 	if strings.Contains(cfg.Bucket, ".") && cfg.Endpoint != "" {
 		cfg.ForcePathStyle = true
+	}
+}
+
+func inferProvider(region, endpoint string) string {
+	region = strings.ToLower(strings.TrimSpace(region))
+	endpoint = strings.ToLower(strings.TrimSpace(endpoint))
+	switch {
+	case strings.Contains(endpoint, "storage.yandexcloud.net"):
+		return "yandex"
+	case strings.HasPrefix(region, "ru-central1"):
+		return "yandex"
+	case strings.Contains(endpoint, "127.0.0.1") || strings.Contains(endpoint, "localhost"):
+		return "minio"
+	default:
+		return "aws"
 	}
 }
 
