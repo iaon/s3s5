@@ -366,9 +366,13 @@ func (s *Server) streamFromStore(ctx context.Context, sessionID, direction, peer
 
 func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peerSide string, w io.Writer, maxBytes int64) error {
 	var seq uint64
+	var lastAck uint64
 	var received int64
 	delay := cfg.PollMin
 	deadline := time.Now().Add(cfg.IdleTimeout)
+	closeCheckEvery := 4
+	missesSinceCloseCheck := closeCheckEvery
+	ackEvery := ackInterval(cfg.WindowChunks)
 	for {
 		key := protocol.DataKey(cfg.Prefix, direction, sessionID, seq)
 		cfg.Stats.incGet()
@@ -387,20 +391,33 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 			cfg.Stats.incChunksReceived(len(plain))
 			received += int64(len(plain))
 			seq++
-			if err := putAck(ctx, cfg, sessionID, direction, seq); err != nil {
-				return err
+			if seq-lastAck >= ackEvery {
+				if err := putAck(ctx, cfg, sessionID, direction, seq); err != nil {
+					return err
+				}
+				lastAck = seq
 			}
 			delay = cfg.PollMin
 			deadline = time.Now().Add(cfg.IdleTimeout)
+			missesSinceCloseCheck = closeCheckEvery
 			continue
 		}
 		if !objectstore.IsNotFound(err) {
 			return err
 		}
-		if closed, err := closeExists(ctx, cfg, sessionID, peerSide); err != nil {
-			return err
-		} else if closed {
-			return nil
+		missesSinceCloseCheck++
+		if missesSinceCloseCheck >= closeCheckEvery {
+			missesSinceCloseCheck = 0
+			if closed, err := closeExists(ctx, cfg, sessionID, peerSide); err != nil {
+				return err
+			} else if closed {
+				if seq > lastAck {
+					if err := putAck(ctx, cfg, sessionID, direction, seq); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
 		}
 		if time.Now().After(deadline) {
 			return fmt.Errorf("idle timeout waiting for %s seq %d", direction, seq)
@@ -414,6 +431,9 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 
 func waitWindow(ctx context.Context, cfg Config, sessionID, direction string, seq uint64) error {
 	if cfg.WindowChunks == 0 {
+		return nil
+	}
+	if seq < cfg.WindowChunks {
 		return nil
 	}
 	delay := cfg.PollMin
@@ -430,6 +450,13 @@ func waitWindow(ctx context.Context, cfg Config, sessionID, direction string, se
 		}
 		delay = nextDelay(delay, cfg.PollMax)
 	}
+}
+
+func ackInterval(window uint64) uint64 {
+	if window <= 2 {
+		return 1
+	}
+	return window / 2
 }
 
 func putAck(ctx context.Context, cfg Config, sessionID, direction string, next uint64) error {

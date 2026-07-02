@@ -53,6 +53,19 @@ The ACK window caps how much data can be in flight without confirmation.
 Larger windows improve throughput on higher-latency links.
 Smaller windows reduce burst size and limit S3 object growth when a peer stalls.
 
+The implementation batches ACK writes: receivers ACK roughly every half-window
+and write a final ACK when they observe peer close. Writers also avoid reading
+ACK state while they are still inside the initial window. For short transfers,
+this keeps ACK objects from dominating the request count.
+
+### Polling misses
+
+When a peer waits for the next data object, missing-object polls are expected.
+The reader checks close markers less often than data keys so a quiet period does
+not double every poll into both `GET data` and `HEAD close`. Increasing
+`--poll-min` and `--poll-max` reduces read request volume at the cost of slower
+reaction time.
+
 ## Consistency assumptions
 
 The protocol assumes plain S3-compatible behavior and tolerates missing objects while polling.

@@ -154,6 +154,61 @@ func TestByteLimitAppliesInBothDirections(t *testing.T) {
 	}
 }
 
+func TestInitialWindowDoesNotReadAck(t *testing.T) {
+	ctx := context.Background()
+	store := memory.New()
+	stats := &Stats{}
+	cfg := testConfig(store, s3crypto.NoopCodec{})
+	cfg.Stats = stats
+	cfg.ChunkSize = 4
+	cfg.WindowChunks = 16
+	client, err := NewClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := client.streamToStore(ctx, "session-window", DirectionC2S, SideClient, strings.NewReader("abcdefghijkl"), 0); err != nil {
+		t.Fatal(err)
+	}
+	if got := stats.Snapshot().GetObjects; got != 0 {
+		t.Fatalf("initial window should not read ACK objects, got %d GETs", got)
+	}
+}
+
+func TestStreamFromStoreBatchesAck(t *testing.T) {
+	ctx := context.Background()
+	store := memory.New()
+	stats := &Stats{}
+	cfg := testConfig(store, s3crypto.NoopCodec{})
+	cfg.Stats = stats
+	cfg.ChunkSize = 4
+	cfg.WindowChunks = 16
+	sessionID := "session-ack-batch"
+	for i, data := range []string{"abcd", "efgh", "ijkl"} {
+		if err := store.PutObject(ctx, protocol.DataKey(cfg.Prefix, DirectionS2C, sessionID, uint64(i)), []byte(data), objectstore.PutOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := putClose(ctx, cfg, sessionID, SideServer, ""); err != nil {
+		t.Fatal(err)
+	}
+	stats = &Stats{}
+	cfg.Stats = stats
+	var out bytes.Buffer
+	server, err := NewServer(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := server.streamFromStore(ctx, sessionID, DirectionS2C, SideServer, &out, 0); err != nil {
+		t.Fatal(err)
+	}
+	if out.String() != "abcdefghijkl" {
+		t.Fatalf("stream output = %q", out.String())
+	}
+	if got := stats.Snapshot().PutObjects; got != 1 {
+		t.Fatalf("expected one final ACK PUT for short stream, got %d", got)
+	}
+}
+
 func testConfig(store *memory.Store, codec s3crypto.Codec) Config {
 	return Config{
 		Store:        store,
