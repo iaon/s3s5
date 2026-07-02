@@ -43,6 +43,10 @@ type Server struct {
 }
 
 func (s *Server) Serve(ctx context.Context, ln net.Listener) error {
+	go func() {
+		<-ctx.Done()
+		_ = ln.Close()
+	}()
 	for {
 		conn, err := ln.Accept()
 		if err != nil {

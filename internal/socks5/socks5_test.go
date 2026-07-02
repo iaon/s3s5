@@ -2,9 +2,12 @@ package socks5
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
+	"errors"
 	"net"
 	"testing"
+	"time"
 
 	"s3s5/internal/protocol"
 )
@@ -41,6 +44,27 @@ func TestReadRequestAddressTypes(t *testing.T) {
 				t.Fatalf("cmd=%d target=%#v", cmd, got)
 			}
 		})
+	}
+}
+
+func TestServeExitsOnContextCancel(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	done := make(chan error, 1)
+	go func() {
+		done <- (&Server{}).Serve(ctx, ln)
+	}()
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("Serve returned %v, want context.Canceled", err)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("Serve did not exit after context cancellation")
 	}
 }
 
