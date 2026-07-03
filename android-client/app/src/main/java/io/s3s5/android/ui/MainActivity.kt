@@ -233,7 +233,7 @@ class MainActivity : Activity() {
     private fun edit(hint: String, password: Boolean = false, number: Boolean = false): EditText =
         EditText(this).apply {
             this.hint = hint
-            singleLine = true
+            setSingleLine(true)
             inputType = when {
                 password -> InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_PASSWORD
                 number -> InputType.TYPE_CLASS_NUMBER

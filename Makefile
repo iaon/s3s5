@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint android-build android-test minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint android-build android-test android-docker-image android-docker-build android-docker-test minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -24,6 +24,15 @@ android-build:
 
 android-test:
 	cd android-client && ./gradlew :app:testDebugUnitTest
+
+android-docker-image:
+	./android-client/scripts/docker-build-image.sh
+
+android-docker-build:
+	./android-client/scripts/docker-gradle.sh :app:assembleDebug
+
+android-docker-test:
+	./android-client/scripts/docker-gradle.sh :app:testDebugUnitTest
 
 minio-up:
 	./scripts/minio-up.sh

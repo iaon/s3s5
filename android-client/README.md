@@ -20,6 +20,23 @@ This repository environment currently has Java but no Gradle executable and no
 Android SDK, so Android build verification must happen on a machine with those
 tools installed.
 
+## Docker Build
+
+To build without installing Gradle or Android SDK locally, use Docker:
+
+```sh
+make android-docker-build
+make android-docker-test
+```
+
+The first run builds `s3s5-android-build:35` from
+`android-client/Dockerfile`, pulls the Android SDK base image, and downloads
+Gradle dependencies into `.cache/gradle`. Override the image name with:
+
+```sh
+S3S5_ANDROID_DOCKER_IMAGE=my-android-build:local make android-docker-build
+```
+
 ## Manual Smoke
 
 1. Start an `s3s5-server` using the same bucket, prefix, provider, and PSK.

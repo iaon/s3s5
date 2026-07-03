@@ -22,6 +22,17 @@ Build:
 ./gradlew :app:assembleDebug
 ```
 
+Docker build without local Android tooling:
+
+```sh
+make android-docker-build
+make android-docker-test
+```
+
+These commands build and use the local Docker image
+`s3s5-android-build:35`, mounting `.cache/gradle` and `.cache/android-sdk` for
+repeatable dependency caches.
+
 Manual emulator smoke:
 
 ```sh

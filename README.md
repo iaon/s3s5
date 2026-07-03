@@ -1,12 +1,12 @@
 # s3s5
 
-`s3s5` is a SOCKS5-over-S3 MVP for Linux.
+`s3s5` is a SOCKS5-over-S3 MVP for Linux and Android.
 
 The current shape is:
 
 `SOCKS5 client -> S3-compatible object store -> TCP server`
 
-The code is written in Go and is structured so the client-side core can later be ported to Android without dragging Linux-only assumptions into the protocol, crypto, or policy layers.
+The Linux command-line tools are written in Go. The Android client is a Kotlin-native app under `android-client/` that speaks the same S3 mailbox protocol as the Go server.
 
 ## Status
 
@@ -14,10 +14,12 @@ This repository is still an MVP. The implementation intentionally favors correct
 
 Current limits:
 
-- Linux client and server only
+- Linux client and server
+- Android client MVP with local SOCKS5 listener only
 - SOCKS5 `CONNECT` only
 - no UDP ASSOCIATE
 - no SOCKS5 BIND
+- Android has no VPNService, no device-wide proxying, and no boot autostart
 - `s3s5-server` requires `--allow-target` or `--allow-unrestricted-egress`
 - polling-based transport, so latency is inherently high
 - S3 request volume directly affects cost
@@ -28,6 +30,7 @@ Current limits:
 - `cmd/s3s5-client`
 - `cmd/s3s5-server`
 - `cmd/s3s5-doctor`
+- `android-client/`
 - `internal/socks5`, `internal/protocol`, `internal/crypto`, `internal/policy`, `internal/tunnel`
 
 Design notes:
@@ -45,6 +48,8 @@ See:
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
 - [docs/ANDROID_PORTING.md](docs/ANDROID_PORTING.md)
 - [docs/reference-survey.md](docs/reference-survey.md)
+- [android-client/README.md](android-client/README.md)
+- [android-client/docs/PROTOCOL_COMPATIBILITY.md](android-client/docs/PROTOCOL_COMPATIBILITY.md)
 
 ## Quick start
 
@@ -130,6 +135,104 @@ This is suitable for bulk-ish TCP traffic and controlled environments. It is not
 ## Testing
 
 `go test ./...` may need permission to bind loopback sockets in restricted sandboxes because the integration tests start local listeners.
+
+Useful targets:
+
+```bash
+make build
+go test ./...
+make test-race
+```
+
+## Android client
+
+The Android client is a phase-1 Kotlin app compatible with the existing Go `s3s5-server`.
+
+It runs a visible foreground service, listens on `127.0.0.1:1080` by default, and tunnels SOCKS5 `CONNECT` sessions through the same S3 object protocol. It does not implement `VpnService`; apps or tools must explicitly use the local SOCKS5 proxy.
+
+Android app features:
+
+- local SOCKS5 no-auth `CONNECT` listener
+- foreground service with persistent notification and Stop action
+- config screen for provider, bucket, prefix, region, endpoint, listen address, and credentials
+- Doctor button for S3 put/get/head/list/delete roundtrip
+- AWS, Yandex Object Storage, MinIO, and custom S3-compatible provider presets
+- PSK-derived AES-256-GCM payload encryption
+- Android Keystore-backed storage for S3 secrets and PSK
+- status, counters, and in-app logs
+
+### Android build without local SDK
+
+You can build the APK with Docker, without installing Gradle or the Android SDK on the host.
+
+First build the Docker image:
+
+```bash
+make android-docker-image
+```
+
+Build the debug APK:
+
+```bash
+make android-docker-build
+```
+
+Run Android JVM tests:
+
+```bash
+make android-docker-test
+```
+
+The debug APK is written to:
+
+```bash
+android-client/app/build/outputs/apk/debug/app-debug.apk
+```
+
+The Docker image defaults to `s3s5-android-build:35`. Override it when needed:
+
+```bash
+S3S5_ANDROID_DOCKER_IMAGE=my-android-build:local make android-docker-build
+```
+
+The first Docker build downloads the Android SDK base image and Gradle dependencies. Gradle caches are stored under `.cache/gradle`; Android/adb state is stored under `.cache/android-sdk`.
+
+### Android build with local tooling
+
+If Gradle and Android SDK are installed locally, use:
+
+```bash
+make android-build
+make android-test
+```
+
+or directly:
+
+```bash
+cd android-client
+./gradlew :app:assembleDebug
+./gradlew :app:testDebugUnitTest
+```
+
+In this repo, `android-client/gradlew` is a shim that calls a system `gradle`; the Docker image provides that executable.
+
+### Debug vs release APK
+
+`make android-docker-build` builds the debug APK with `:app:assembleDebug`.
+
+Debug builds:
+
+- are signed with Android's debug key
+- are suitable for emulator/device testing
+- allow cleartext `http://` endpoints for local MinIO development
+
+Release builds should be produced separately with release signing configured:
+
+```bash
+./android-client/scripts/docker-gradle.sh :app:assembleRelease
+```
+
+Release builds keep cleartext traffic disabled by default and should not be used with arbitrary `http://` S3 endpoints.
 
 ## IPv6
 
