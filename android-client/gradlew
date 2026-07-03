@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v gradle >/dev/null 2>&1; then
+  exec gradle "$@"
+fi
+
+cat >&2 <<'EOF'
+No Gradle executable was found.
+
+Open this project in Android Studio, or install Gradle and Android SDK command-line tools,
+then run:
+  cd android-client
+  gradle :app:assembleDebug
+EOF
+exit 127

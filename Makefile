@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint android-build android-test minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -18,6 +18,12 @@ test-race:
 
 lint:
 	$(GO) vet ./...
+
+android-build:
+	cd android-client && ./gradlew :app:assembleDebug
+
+android-test:
+	cd android-client && ./gradlew :app:testDebugUnitTest
 
 minio-up:
 	./scripts/minio-up.sh

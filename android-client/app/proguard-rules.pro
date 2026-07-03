@@ -1,0 +1,1 @@
+-keep class io.s3s5.android.** { *; }
