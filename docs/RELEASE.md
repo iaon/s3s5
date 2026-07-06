@@ -51,6 +51,7 @@ The release workflow publishes:
 
 - `s3s5_<version>_linux_amd64.tar.gz`
 - `s3s5_<version>_linux_arm64.tar.gz`
+- `s3s5_<version>_android_debug.apk`
 - server `.deb` packages for `amd64` and `arm64`
 - server `.rpm` packages for `x86_64` and `aarch64`
 - `SHA256SUMS`
@@ -69,7 +70,9 @@ The Android debug APK is written to:
 android-client/app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Release Android APKs require release signing configuration before publication.
+GitHub releases publish that APK as
+`s3s5_<version>_android_debug.apk`. It is signed with Android's debug key.
+Release-signed Android APKs require release signing configuration.
 
 ## Manual Release Workflow
 

@@ -64,12 +64,19 @@ jobs:
       - name: Build server packages
         run: make server-package-all-arch
 
+      - name: Build Android debug APK
+        run: make android-docker-build
+
+      - name: Run Android unit tests
+        run: make android-docker-test
+
       - name: Collect release artifacts
         run: |
           mkdir -p dist/github-release
           cp dist/release/*.tar.gz dist/github-release/
           cp dist/packages/*.deb dist/github-release/
           cp dist/packages/*.rpm dist/github-release/
+          cp android-client/app/build/outputs/apk/debug/app-debug.apk "dist/github-release/s3s5_${{ steps.release.outputs.version }}_android_debug.apk"
           (cd dist/github-release && sha256sum * > SHA256SUMS)
 
       - name: Publish GitHub Release

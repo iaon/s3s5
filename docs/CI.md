@@ -51,9 +51,11 @@ Release CI builds:
 - Go checks: build, test, vet
 - Linux binary tarballs for `linux/amd64` and `linux/arm64`
 - server `.deb` and `.rpm` packages for `amd64` and `arm64`
+- Android debug APK and Android JVM tests
 - `SHA256SUMS`
 
 It then publishes those files to a GitHub Release.
 
-Android release APKs are not published yet because release signing has not been
-configured. The Android workflow only publishes debug APK artifacts.
+The GitHub Release includes `s3s5_<version>_android_debug.apk`. It is signed
+with Android's debug key and is intended for test installs until release signing
+is configured.

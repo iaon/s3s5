@@ -293,6 +293,12 @@ The debug APK is written to:
 android-client/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+GitHub releases publish the same debug APK as:
+
+```text
+s3s5_<version>_android_debug.apk
+```
+
 The Docker image defaults to `s3s5-android-build:35`. Override it when needed:
 
 ```bash
