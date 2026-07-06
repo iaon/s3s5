@@ -144,6 +144,70 @@ go test ./...
 make test-race
 ```
 
+## Server packages
+
+The repository can build server-only `.deb` and `.rpm` packages. The packages
+install:
+
+- `/usr/bin/s3s5-server`
+- `/usr/lib/s3s5/s3s5-server-start`
+- `s3s5-server.service`
+- `/etc/s3s5/s3s5-server.env`
+
+The service is intentionally disabled after installation. Package scripts create
+the `s3s5` system user/group and run `systemctl daemon-reload`, but they do not
+run `systemctl enable` or `systemctl start`.
+
+Build both package formats with Docker:
+
+```bash
+make server-package
+```
+
+Build only one format:
+
+```bash
+make server-package-deb
+make server-package-rpm
+```
+
+Rebuild the packaging image explicitly:
+
+```bash
+make server-package-image
+```
+
+Artifacts are written to:
+
+```bash
+dist/packages/s3s5-server_0.1.0-1_amd64.deb
+dist/packages/s3s5-server-0.1.0-1.x86_64.rpm
+```
+
+Override version, release, or architecture:
+
+```bash
+VERSION=0.2.0 RELEASE=1 GOARCH=amd64 make server-package
+```
+
+After installing a package, edit the environment file:
+
+```bash
+sudo editor /etc/s3s5/s3s5-server.env
+```
+
+The env template includes S3/S3-compatible provider settings, AWS/Yandex
+credential variables, PSK settings, polling/window tuning, and server egress
+policy variables such as `S3S5_ALLOW_TARGETS`,
+`S3S5_ALLOW_UNRESTRICTED_EGRESS`, `S3S5_MAX_SESSIONS`, and
+`S3S5_CONNECT_TIMEOUT`.
+
+Enable and start the service explicitly when configuration is ready:
+
+```bash
+sudo systemctl enable --now s3s5-server
+```
+
 ## Android client
 
 The Android client is a phase-1 Kotlin app compatible with the existing Go `s3s5-server`.

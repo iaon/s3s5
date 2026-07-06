@@ -1,0 +1,26 @@
+[Unit]
+Description=s3s5 SOCKS5-over-S3 server
+Documentation=file:/usr/share/doc/s3s5-server/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=s3s5
+Group=s3s5
+EnvironmentFile=-/etc/s3s5/s3s5-server.env
+ExecStart=/usr/lib/s3s5/s3s5-server-start
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

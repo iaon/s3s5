@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint android-build android-test android-docker-image android-docker-build android-docker-test minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -33,6 +33,18 @@ android-docker-build:
 
 android-docker-test:
 	./android-client/scripts/docker-gradle.sh :app:testDebugUnitTest
+
+server-package-image:
+	S3S5_PACKAGE_DOCKER_REBUILD=1 ./scripts/package-server-docker.sh --image-only
+
+server-package-deb:
+	./scripts/package-server-docker.sh deb
+
+server-package-rpm:
+	./scripts/package-server-docker.sh rpm
+
+server-package:
+	./scripts/package-server-docker.sh all
 
 minio-up:
 	./scripts/minio-up.sh

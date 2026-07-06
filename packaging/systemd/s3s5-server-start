@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+args=()
+
+add_flag() {
+  local name="$1"
+  local flag="$2"
+  local value="${!name:-}"
+  if [[ -n "$value" ]]; then
+    args+=("$flag" "$value")
+  fi
+}
+
+add_bool_flag() {
+  local name="$1"
+  local flag="$2"
+  local value="${!name:-}"
+  case "${value,,}" in
+    1|true|yes|on) args+=("$flag") ;;
+    ""|0|false|no|off) ;;
+    *) echo "invalid boolean $name=$value" >&2; exit 2 ;;
+  esac
+}
+
+add_multi_csv() {
+  local name="$1"
+  local flag="$2"
+  local value="${!name:-}"
+  local item
+  if [[ -z "$value" ]]; then
+    return
+  fi
+  IFS=',' read -r -a items <<< "$value"
+  for item in "${items[@]}"; do
+    item="${item#"${item%%[![:space:]]*}"}"
+    item="${item%"${item##*[![:space:]]}"}"
+    if [[ -n "$item" ]]; then
+      args+=("$flag" "$item")
+    fi
+  done
+}
+
+add_flag S3S5_PROVIDER --provider
+add_flag S3S5_BUCKET --bucket
+add_flag S3S5_PREFIX --prefix
+add_flag S3S5_REGION --region
+add_flag S3S5_ENDPOINT --endpoint
+add_flag S3S5_PSK_ENV --psk-env
+add_flag S3S5_CHUNK_SIZE --chunk-size
+add_flag S3S5_POLL_MIN --poll-min
+add_flag S3S5_POLL_MAX --poll-max
+add_flag S3S5_WINDOW_CHUNKS --window-chunks
+add_flag S3S5_IDLE_TIMEOUT --idle-timeout
+add_flag S3S5_LOG_LEVEL --log-level
+add_bool_flag S3S5_FORCE_PATH_STYLE --force-path-style
+add_bool_flag S3S5_INSECURE_NO_CRYPTO --insecure-no-crypto
+
+add_multi_csv S3S5_ALLOW_TARGETS --allow-target
+add_multi_csv S3S5_DENY_TARGETS --deny-target
+add_bool_flag S3S5_ALLOW_PRIVATE --allow-private
+add_bool_flag S3S5_ALLOW_UNRESTRICTED_EGRESS --allow-unrestricted-egress
+add_flag S3S5_MAX_SESSIONS --max-sessions
+add_flag S3S5_MAX_BYTES_PER_SESSION --max-bytes-per-session
+add_flag S3S5_CONNECT_TIMEOUT --connect-timeout
+
+if [[ -n "${S3S5_EXTRA_ARGS:-}" ]]; then
+  # shellcheck disable=SC2206
+  extra=( ${S3S5_EXTRA_ARGS} )
+  args+=("${extra[@]}")
+fi
+
+exec /usr/bin/s3s5-server "${args[@]}"
