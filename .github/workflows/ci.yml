@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: Build
+        run: make build
+      - name: Test
+        run: make test
+      - name: Vet
+        run: make lint
+
+  packages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build server packages
+        run: make server-package
+      - name: Upload package artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3s5-server-packages
+          path: dist/packages/*

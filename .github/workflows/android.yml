@@ -1,0 +1,23 @@
+name: Android
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "android-client/**"
+      - ".github/workflows/android.yml"
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build debug APK
+        run: make android-docker-build
+      - name: Run Android unit tests
+        run: make android-docker-test
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android-client/app/build/outputs/apk/debug/app-debug.apk

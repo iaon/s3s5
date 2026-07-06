@@ -50,6 +50,8 @@ See:
 - [docs/reference-survey.md](docs/reference-survey.md)
 - [android-client/README.md](android-client/README.md)
 - [android-client/docs/PROTOCOL_COMPATIBILITY.md](android-client/docs/PROTOCOL_COMPATIBILITY.md)
+- [CONTRIBUTING.md](CONTRIBUTING.md)
+- [SECURITY.md](SECURITY.md)
 
 ## Quick start
 
@@ -297,6 +299,17 @@ Release builds should be produced separately with release signing configured:
 ```
 
 Release builds keep cleartext traffic disabled by default and should not be used with arbitrary `http://` S3 endpoints.
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
+
+Do not report vulnerabilities in public issues. See [SECURITY.md](SECURITY.md)
+for the current reporting policy.
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
 
 ## IPv6
 

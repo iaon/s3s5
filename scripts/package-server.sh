@@ -133,7 +133,7 @@ Name: s3s5-server
 Version: ${rv}
 Release: ${RELEASE}%{?dist}
 Summary: SOCKS5-over-S3 server
-License: NOASSERTION
+License: Apache-2.0
 BuildArch: ${arch}
 Requires: bash
 Requires(pre): shadow-utils
