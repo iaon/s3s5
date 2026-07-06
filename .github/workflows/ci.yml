@@ -29,7 +29,7 @@ jobs:
       - name: Build server packages
         run: make server-package
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: s3s5-server-packages
           path: dist/packages/*
