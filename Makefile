@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint release-artifacts android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -22,6 +22,9 @@ test-race:
 
 lint:
 	$(GO) vet ./...
+
+release-artifacts:
+	./scripts/build-release-artifacts.sh
 
 android-build:
 	cd android-client && ./gradlew :app:assembleDebug

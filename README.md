@@ -46,6 +46,7 @@ See:
 - [docs/PROTOCOL.md](docs/PROTOCOL.md)
 - [docs/SECURITY.md](docs/SECURITY.md)
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+- [docs/CI.md](docs/CI.md)
 - [docs/RELEASE.md](docs/RELEASE.md)
 - [docs/ANDROID_PORTING.md](docs/ANDROID_PORTING.md)
 - [docs/reference-survey.md](docs/reference-survey.md)
