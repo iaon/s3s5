@@ -183,6 +183,8 @@ EOF
 }
 
 rm -rf "$WORK_DIR"
+mkdir -p "$DIST_DIR"
+rm -f "$DIST_DIR"/s3s5-server_*.deb "$DIST_DIR"/s3s5-server-*.rpm
 build_binary
 
 case "$PACKAGE_FORMAT" in

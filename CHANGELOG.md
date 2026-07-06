@@ -7,6 +7,8 @@ semantic versioning once it starts publishing tagged releases.
 
 ## Unreleased
 
+## 0.1.1 - 2026-07-06
+
 - Add Linux Go client, server, and doctor MVP.
 - Add Android client MVP.
 - Add Docker-based Android and server package builds.
