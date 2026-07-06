@@ -1,4 +1,4 @@
-FROM ghcr.io/cirruslabs/android-sdk:35
+FROM ghcr.io/cirruslabs/android-sdk:36
 
 ARG GRADLE_VERSION=8.10.2
 
