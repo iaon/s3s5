@@ -10,3 +10,4 @@ semantic versioning once it starts publishing tagged releases.
 - Add Linux Go client, server, and doctor MVP.
 - Add Android client MVP.
 - Add Docker-based Android and server package builds.
+- Add root `VERSION` tracking and CLI `--version` output.

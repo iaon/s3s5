@@ -13,15 +13,22 @@ import (
 	s3store "s3s5/internal/objectstore/s3"
 	"s3s5/internal/socks5"
 	"s3s5/internal/tunnel"
+	"s3s5/internal/version"
 )
 
 func main() {
 	var common config.Common
 	var listen string
+	var showVersion bool
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	config.AddCommonFlags(fs, &common)
 	fs.StringVar(&listen, "listen", "127.0.0.1:1080", "local SOCKS5 listen address")
+	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	_ = fs.Parse(os.Args[1:])
+	if showVersion {
+		fmt.Fprintf(os.Stdout, "s3s5-client %s\n", version.String())
+		return
+	}
 	if err := common.Finalize(true); err != nil {
 		fatal(err)
 	}

@@ -13,6 +13,7 @@ import (
 	"s3s5/internal/objectstore"
 	s3store "s3s5/internal/objectstore/s3"
 	"s3s5/internal/protocol"
+	"s3s5/internal/version"
 )
 
 type report struct {
@@ -38,13 +39,19 @@ func main() {
 	var cleanupPrefix bool
 	var rounds int
 	var jsonOut bool
+	var showVersion bool
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	config.AddCommonFlags(fs, &common)
 	fs.BoolVar(&cleanup, "cleanup", true, "delete doctor test objects")
 	fs.BoolVar(&cleanupPrefix, "cleanup-prefix", false, "delete all objects under --prefix and exit")
 	fs.IntVar(&rounds, "latency-rounds", 3, "round-trip latency rounds")
 	fs.BoolVar(&jsonOut, "json", false, "emit JSON")
+	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	_ = fs.Parse(os.Args[1:])
+	if showVersion {
+		fmt.Fprintf(os.Stdout, "s3s5-doctor %s\n", version.String())
+		return
+	}
 	if err := common.Finalize(true); err != nil {
 		fatal(err)
 	}

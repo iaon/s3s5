@@ -3,12 +3,16 @@
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
 export GOFLAGS ?= -buildvcs=false
+VERSION ?= $(shell cat VERSION)
+COMMIT ?= $(shell git rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
+DATE ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
+LDFLAGS := -s -w -X s3s5/internal/version.Version=$(VERSION) -X s3s5/internal/version.Commit=$(COMMIT) -X s3s5/internal/version.Date=$(DATE)
 
 build:
 	mkdir -p bin
-	$(GO) build -o bin/s3s5-client ./cmd/s3s5-client
-	$(GO) build -o bin/s3s5-server ./cmd/s3s5-server
-	$(GO) build -o bin/s3s5-doctor ./cmd/s3s5-doctor
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-client ./cmd/s3s5-client
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-server ./cmd/s3s5-server
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-doctor ./cmd/s3s5-doctor
 
 test:
 	$(GO) test ./...

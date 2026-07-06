@@ -46,6 +46,7 @@ See:
 - [docs/PROTOCOL.md](docs/PROTOCOL.md)
 - [docs/SECURITY.md](docs/SECURITY.md)
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md)
+- [docs/RELEASE.md](docs/RELEASE.md)
 - [docs/ANDROID_PORTING.md](docs/ANDROID_PORTING.md)
 - [docs/reference-survey.md](docs/reference-survey.md)
 - [android-client/README.md](android-client/README.md)
@@ -145,6 +146,26 @@ make build
 go test ./...
 make test-race
 ```
+
+## Versioning
+
+The root [VERSION](VERSION) file is the source of truth for project release
+versions. It is used by:
+
+- Linux CLI build metadata
+- server `.deb` and `.rpm` package versions
+- Android `versionName` and derived `versionCode`
+
+Linux binaries support `--version`:
+
+```bash
+./bin/s3s5-server --version
+./bin/s3s5-client --version
+./bin/s3s5-doctor --version
+```
+
+Release tags should use the same value with a `v` prefix, for example
+`v0.1.0`.
 
 ## Server packages
 

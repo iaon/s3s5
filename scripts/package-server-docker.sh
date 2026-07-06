@@ -25,9 +25,11 @@ docker run --rm \
   --user "$(id -u):$(id -g)" \
   -e HOME=/tmp \
   -e GOCACHE=/work/.cache/go-build \
-  -e VERSION="${VERSION:-0.1.0}" \
+  -e VERSION="${VERSION:-$(cat "$ROOT_DIR/VERSION")}" \
   -e RELEASE="${RELEASE:-1}" \
   -e GOARCH="${GOARCH:-amd64}" \
+  -e COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)}" \
+  -e DATE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
   -v "$ROOT_DIR:/work" \
   -w /work \
   "$IMAGE" \

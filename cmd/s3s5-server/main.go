@@ -13,6 +13,7 @@ import (
 	s3store "s3s5/internal/objectstore/s3"
 	"s3s5/internal/policy"
 	"s3s5/internal/tunnel"
+	"s3s5/internal/version"
 )
 
 type multiFlag []string
@@ -31,8 +32,10 @@ func main() {
 	var maxSessions int
 	var maxBytes int64
 	var connectTimeout time.Duration
+	var showVersion bool
 	fs := flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 	config.AddCommonFlags(fs, &common)
+	fs.BoolVar(&showVersion, "version", false, "print version and exit")
 	fs.Var(&allowTargets, "allow-target", "required allow target rule unless --allow-unrestricted-egress is set; repeatable; examples: example.com:443, *.example.com, 203.0.113.0/24")
 	fs.Var(&denyTargets, "deny-target", "deny target rule, repeatable")
 	fs.BoolVar(&allowPrivate, "allow-private", false, "allow private, loopback, link-local, multicast, unspecified, and metadata ranges")
@@ -41,6 +44,10 @@ func main() {
 	fs.Int64Var(&maxBytes, "max-bytes-per-session", 1<<30, "maximum bytes sent from server to client per session")
 	fs.DurationVar(&connectTimeout, "connect-timeout", 10*time.Second, "outbound target connect timeout")
 	_ = fs.Parse(os.Args[1:])
+	if showVersion {
+		fmt.Fprintf(os.Stdout, "s3s5-server %s\n", version.String())
+		return
+	}
 	if err := common.Finalize(true); err != nil {
 		fatal(err)
 	}

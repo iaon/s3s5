@@ -4,11 +4,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIST_DIR="${ROOT_DIR}/dist/packages"
 WORK_DIR="${ROOT_DIR}/tmp/package-server"
-VERSION="${VERSION:-0.1.0}"
+VERSION="${VERSION:-$(cat "$ROOT_DIR/VERSION")}"
 RELEASE="${RELEASE:-1}"
 GOOS="${GOOS:-linux}"
 GOARCH="${GOARCH:-amd64}"
 PACKAGE_FORMAT="${1:-all}"
+COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)}"
+DATE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 export GOCACHE="${GOCACHE:-$ROOT_DIR/.cache/go-build}"
 
 case "$PACKAGE_FORMAT" in
@@ -61,7 +63,7 @@ build_binary() {
     cd "$ROOT_DIR"
     CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build \
       -trimpath \
-      -ldflags="-s -w" \
+      -ldflags="-s -w -X s3s5/internal/version.Version=${VERSION} -X s3s5/internal/version.Commit=${COMMIT} -X s3s5/internal/version.Date=${DATE}" \
       -o "$WORK_DIR/s3s5-server" \
       ./cmd/s3s5-server
   )

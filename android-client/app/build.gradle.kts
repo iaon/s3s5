@@ -3,6 +3,20 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val rootVersionFile = rootProject.file("../VERSION")
+val appVersionName = rootVersionFile.readText().trim()
+val appVersionCode = appVersionName
+    .split(".", "-")
+    .take(3)
+    .map { it.toIntOrNull() ?: 0 }
+    .let { parts ->
+        val major = parts.getOrElse(0) { 0 }
+        val minor = parts.getOrElse(1) { 0 }
+        val patch = parts.getOrElse(2) { 0 }
+        major * 10000 + minor * 100 + patch
+    }
+    .coerceAtLeast(1)
+
 android {
     namespace = "io.s3s5.android"
     compileSdk = 35
@@ -11,8 +25,8 @@ android {
         applicationId = "io.s3s5.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "android.test.InstrumentationTestRunner"
         manifestPlaceholders["usesCleartextTraffic"] = "false"
     }
