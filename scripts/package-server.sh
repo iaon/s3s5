@@ -11,6 +11,7 @@ GOARCH="${GOARCH:-amd64}"
 PACKAGE_FORMAT="${1:-all}"
 COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)}"
 DATE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+S3S5_PACKAGE_CLEAN="${S3S5_PACKAGE_CLEAN:-1}"
 export GOCACHE="${GOCACHE:-$ROOT_DIR/.cache/go-build}"
 
 case "$PACKAGE_FORMAT" in
@@ -18,12 +19,15 @@ case "$PACKAGE_FORMAT" in
   *) echo "usage: $0 [all|deb|rpm]" >&2; exit 2 ;;
 esac
 
+case "$GOARCH" in
+  amd64|arm64) ;;
+  *) echo "unsupported GOARCH for server packages: $GOARCH" >&2; exit 2 ;;
+esac
+
 deb_arch() {
   case "$GOARCH" in
     amd64) echo "amd64" ;;
     arm64) echo "arm64" ;;
-    arm) echo "armhf" ;;
-    *) echo "$GOARCH" ;;
   esac
 }
 
@@ -31,8 +35,6 @@ rpm_arch() {
   case "$GOARCH" in
     amd64) echo "x86_64" ;;
     arm64) echo "aarch64" ;;
-    arm) echo "armv7hl" ;;
-    *) echo "$GOARCH" ;;
   esac
 }
 
@@ -136,7 +138,7 @@ Version: ${rv}
 Release: ${RELEASE}%{?dist}
 Summary: SOCKS5-over-S3 server
 License: Apache-2.0
-BuildArch: ${arch}
+%global __strip /bin/true
 Requires: bash
 Requires(pre): shadow-utils
 Requires(post): systemd
@@ -176,7 +178,7 @@ fi
 %config(noreplace) %attr(0600,root,root) /etc/s3s5/s3s5-server.env
 %doc /usr/share/doc/s3s5-server/README.md
 EOF
-  rpmbuild --define "_topdir $top" -bb "$spec"
+  rpmbuild --target "$arch" --define "_topdir $top" -bb "$spec"
   mkdir -p "$DIST_DIR"
   package="$(find "$top/RPMS" -type f -name '*.rpm' | head -n 1)"
   cp "$package" "$DIST_DIR/"
@@ -184,7 +186,9 @@ EOF
 
 rm -rf "$WORK_DIR"
 mkdir -p "$DIST_DIR"
-rm -f "$DIST_DIR"/s3s5-server_*.deb "$DIST_DIR"/s3s5-server-*.rpm
+if [[ "$S3S5_PACKAGE_CLEAN" == "1" ]]; then
+  rm -f "$DIST_DIR"/s3s5-server_*.deb "$DIST_DIR"/s3s5-server-*.rpm
+fi
 build_binary
 
 case "$PACKAGE_FORMAT" in

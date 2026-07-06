@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint release-artifacts android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint release-artifacts android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package server-package-arm64 server-package-all-arch server-package-deb-all-arch server-package-rpm-all-arch minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -52,6 +52,18 @@ server-package-rpm:
 
 server-package:
 	./scripts/package-server-docker.sh all
+
+server-package-arm64:
+	GOARCH=arm64 ./scripts/package-server-docker.sh all
+
+server-package-all-arch:
+	./scripts/package-server-all-arch.sh all
+
+server-package-deb-all-arch:
+	./scripts/package-server-all-arch.sh deb
+
+server-package-rpm-all-arch:
+	./scripts/package-server-all-arch.sh rpm
 
 minio-up:
 	./scripts/minio-up.sh

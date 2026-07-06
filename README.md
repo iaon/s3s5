@@ -188,11 +188,25 @@ Build both package formats with Docker:
 make server-package
 ```
 
+Build ARM packages:
+
+```bash
+make server-package-arm64
+```
+
+Build all supported server package architectures:
+
+```bash
+make server-package-all-arch
+```
+
 Build only one format:
 
 ```bash
 make server-package-deb
 make server-package-rpm
+make server-package-deb-all-arch
+make server-package-rpm-all-arch
 ```
 
 Rebuild the packaging image explicitly:
@@ -206,6 +220,8 @@ Artifacts are written to:
 ```bash
 dist/packages/s3s5-server_0.1.0-1_amd64.deb
 dist/packages/s3s5-server-0.1.0-1.x86_64.rpm
+dist/packages/s3s5-server_0.1.0-1_arm64.deb
+dist/packages/s3s5-server-0.1.0-1.aarch64.rpm
 ```
 
 Override version, release, or architecture:

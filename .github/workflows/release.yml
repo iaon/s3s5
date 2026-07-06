@@ -62,7 +62,7 @@ jobs:
         run: make release-artifacts
 
       - name: Build server packages
-        run: make server-package
+        run: make server-package-all-arch
 
       - name: Collect release artifacts
         run: |

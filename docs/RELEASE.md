@@ -51,8 +51,8 @@ The release workflow publishes:
 
 - `s3s5_<version>_linux_amd64.tar.gz`
 - `s3s5_<version>_linux_arm64.tar.gz`
-- `s3s5-server_<version>-<release>_amd64.deb`
-- `s3s5-server-<version>-<release>.x86_64.rpm`
+- server `.deb` packages for `amd64` and `arm64`
+- server `.rpm` packages for `x86_64` and `aarch64`
 - `SHA256SUMS`
 
 Local Linux tarballs can be built with:

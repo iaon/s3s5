@@ -50,7 +50,7 @@ Release CI builds:
 
 - Go checks: build, test, vet
 - Linux binary tarballs for `linux/amd64` and `linux/arm64`
-- server `.deb` and `.rpm` packages
+- server `.deb` and `.rpm` packages for `amd64` and `arm64`
 - `SHA256SUMS`
 
 It then publishes those files to a GitHub Release.

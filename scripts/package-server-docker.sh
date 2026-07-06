@@ -30,6 +30,7 @@ docker run --rm \
   -e GOARCH="${GOARCH:-amd64}" \
   -e COMMIT="${COMMIT:-$(git -C "$ROOT_DIR" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)}" \
   -e DATE="${DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
+  -e S3S5_PACKAGE_CLEAN="${S3S5_PACKAGE_CLEAN:-1}" \
   -v "$ROOT_DIR:/work" \
   -w /work \
   "$IMAGE" \
