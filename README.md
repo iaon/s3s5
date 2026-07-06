@@ -299,7 +299,7 @@ GitHub releases publish the same debug APK as:
 s3s5_<version>_android_debug.apk
 ```
 
-The Docker image defaults to `s3s5-android-build:35`. Override it when needed:
+The Docker image defaults to `s3s5-android-build:36`. Override it when needed:
 
 ```bash
 S3S5_ANDROID_DOCKER_IMAGE=my-android-build:local make android-docker-build

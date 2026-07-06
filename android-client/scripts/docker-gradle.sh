@@ -3,7 +3,7 @@ set -eu
 
 cd "$(dirname "$0")/../.."
 
-IMAGE="${S3S5_ANDROID_DOCKER_IMAGE:-s3s5-android-build:35}"
+IMAGE="${S3S5_ANDROID_DOCKER_IMAGE:-s3s5-android-build:36}"
 
 if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   ./android-client/scripts/docker-build-image.sh

@@ -30,7 +30,7 @@ make android-docker-test
 ```
 
 These commands build and use the local Docker image
-`s3s5-android-build:35`, mounting `.cache/gradle` and `.cache/android-sdk` for
+`s3s5-android-build:36`, mounting `.cache/gradle` and `.cache/android-sdk` for
 repeatable dependency caches.
 
 Manual emulator smoke:

@@ -29,7 +29,7 @@ make android-docker-build
 make android-docker-test
 ```
 
-The first run builds `s3s5-android-build:35` from
+The first run builds `s3s5-android-build:36` from
 `android-client/Dockerfile`, pulls the Android SDK base image, and downloads
 Gradle dependencies into `.cache/gradle`. Override the image name with:
 

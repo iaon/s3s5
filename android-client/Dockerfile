@@ -1,6 +1,6 @@
-FROM ghcr.io/cirruslabs/android-sdk:35
+FROM ghcr.io/cirruslabs/android-sdk:36
 
-ARG GRADLE_VERSION=8.10.2
+ARG GRADLE_VERSION=9.4.1
 
 USER root
 
@@ -14,6 +14,6 @@ RUN curl -fsSL "https://services.gradle.org/distributions/gradle-${GRADLE_VERSIO
     && rm /tmp/gradle.zip
 
 RUN yes | sdkmanager --licenses >/dev/null || true \
-    && sdkmanager "platforms;android-35" "build-tools;35.0.0" "build-tools;34.0.0" "platform-tools"
+    && sdkmanager "platforms;android-36" "build-tools;36.0.0" "build-tools;35.0.0" "platform-tools"
 
 WORKDIR /work/android-client
