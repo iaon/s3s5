@@ -7,6 +7,13 @@ semantic versioning once it starts publishing tagged releases.
 
 ## Unreleased
 
+## 0.2.0 - 2026-07-13
+
+- Implement P1 S3 mailbox protocol optimizations.
+- Add cumulative ACK send-window caching, size-or-deadline aggregation, binary encrypted data envelopes, activity-triggered polling wake-up, close-check cadence tuning, paginated open discovery, and mandatory directional chunk-limit negotiation.
+- Update Go client/server, Android client, protocol documentation, performance documentation, and benchmark fixtures for the P1 wire-incompatible protocol update.
+- Add final P1 memory and simulated-S3 benchmark results and optimization report.
+
 ## 0.1.2 - 2026-07-10
 
 - Publish Android debug APKs from GitHub releases.
