@@ -79,6 +79,8 @@ func run(args []string) {
 	fs.IntVar(&cfg.ShortConnections, "short-connections", cfg.ShortConnections, "short-connections scenario count")
 	fs.IntVar(&cfg.IdleSessions, "idle-sessions", cfg.IdleSessions, "concurrent idle sessions")
 	fs.DurationVar(&cfg.IdleDuration, "idle-duration", cfg.IdleDuration, "idle scenario duration")
+	fs.DurationVar(&cfg.ChattyDuration, "chatty-duration", cfg.ChattyDuration, "chatty scenario duration")
+	fs.DurationVar(&cfg.ChattyInterval, "chatty-interval", cfg.ChattyInterval, "delay between chatty writes")
 	fs.DurationVar(&cfg.Delay.PutDelay, "put-delay", 0, "simulated profile PUT delay")
 	fs.DurationVar(&cfg.Delay.GetDelay, "get-delay", 0, "simulated profile GET delay")
 	fs.DurationVar(&cfg.Delay.HeadDelay, "head-delay", 0, "simulated profile HEAD delay")
@@ -187,7 +189,7 @@ func baseline(args []string) {
 	run([]string{"-profile", perf.ProfileMemory, "-out", "benchmarks/results/baseline-v1-memory.json"})
 	report([]string{"-in", "benchmarks/results/baseline-v1-memory.json", "-out", "benchmarks/reports/baseline-v1.md"})
 	if simulated {
-		run([]string{"-profile", perf.ProfileSimulatedS3, "-out", "benchmarks/results/baseline-v1-simulated-s3.json", "-short-connections", "3", "-idle-sessions", "3", "-idle-duration", "50ms", "-put-delay", "10ms", "-get-delay", "10ms", "-head-delay", "10ms", "-list-delay", "12ms", "-delete-delay", "10ms", "-jitter", "1ms"})
+		run([]string{"-profile", perf.ProfileSimulatedS3, "-out", "benchmarks/results/baseline-v1-simulated-s3.json", "-short-connections", "3", "-idle-sessions", "3", "-idle-duration", "50ms", "-chatty-duration", "50ms", "-put-delay", "10ms", "-get-delay", "10ms", "-head-delay", "10ms", "-list-delay", "12ms", "-delete-delay", "10ms", "-jitter", "1ms"})
 	}
 }
 

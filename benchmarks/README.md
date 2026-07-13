@@ -32,6 +32,13 @@ make perf-baseline
 `perf-test` and `perf-test-simulated` write local timestamp-free results under
 `benchmarks/results/local/`, which is ignored by Git.
 
+Idle and chatty low-traffic scenarios are duration-driven. The default hold
+time is 10 seconds for `one-byte-echo-after-idle`,
+`small-chatty-writes`, `concurrent-idle-sessions`, and the idle/chatty parts of
+`mixed-traffic`. Use `-idle-duration`, `-chatty-duration`, and
+`-chatty-interval` for shorter smoke runs. `perf-test-simulated` intentionally
+uses short durations so deterministic-delay smoke tests remain practical.
+
 `perf-baseline` updates committed baseline files:
 
 ```text
@@ -44,6 +51,12 @@ Run a specific scenario:
 
 ```sh
 go run ./cmd/s3s5-perf run -profile memory -scenario bulk-one-mib -out benchmarks/results/local/bulk.json
+```
+
+Run all memory scenarios with shorter idle/chatty holds:
+
+```sh
+go run ./cmd/s3s5-perf run -profile memory -idle-duration 200ms -chatty-duration 200ms -out benchmarks/results/local/quick.json
 ```
 
 Generate a report from any JSON result:
@@ -95,4 +108,3 @@ go run ./cmd/s3s5-perf run -profile real-s3 -real-s3-opt-in -out benchmarks/resu
 Provider presets match the rest of the project: `aws`, `yandex`, `minio`, and
 `custom`. Credentials are read from environment variables and are never written
 to JSON or Markdown output.
-

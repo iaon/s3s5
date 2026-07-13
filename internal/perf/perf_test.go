@@ -16,6 +16,8 @@ func TestMemoryPerformanceSmoke(t *testing.T) {
 	cfg.ShortConnections = 3
 	cfg.IdleSessions = 3
 	cfg.IdleDuration = 20 * time.Millisecond
+	cfg.ChattyDuration = 20 * time.Millisecond
+	cfg.ChattyInterval = time.Millisecond
 	cfg.PollMax = 5 * time.Millisecond
 	result, err := Run(ctx, cfg)
 	if err != nil {

@@ -31,7 +31,7 @@ perf-test:
 	$(GO) run ./cmd/s3s5-perf run -profile memory -out benchmarks/results/local/perf-memory.json
 
 perf-test-simulated:
-	$(GO) run ./cmd/s3s5-perf run -profile simulated-s3 -out benchmarks/results/local/perf-simulated-s3.json -short-connections 3 -idle-sessions 3 -idle-duration 50ms -put-delay 10ms -get-delay 10ms -head-delay 10ms -list-delay 12ms -delete-delay 10ms -jitter 1ms
+	$(GO) run ./cmd/s3s5-perf run -profile simulated-s3 -out benchmarks/results/local/perf-simulated-s3.json -short-connections 3 -idle-sessions 3 -idle-duration 50ms -chatty-duration 50ms -put-delay 10ms -get-delay 10ms -head-delay 10ms -list-delay 12ms -delete-delay 10ms -jitter 1ms
 
 perf-report:
 	$(GO) run ./cmd/s3s5-perf report -in $${PERF_JSON:-benchmarks/results/baseline-v1-memory.json} -out $${PERF_REPORT:-benchmarks/reports/baseline-v1.md}

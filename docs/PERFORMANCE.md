@@ -114,6 +114,15 @@ Run a simulated object-store profile with deterministic delays:
 make perf-test-simulated
 ```
 
+Idle and chatty low-traffic scenarios are held by time instead of by a fixed
+small request count. The default is 10 seconds for idle holds and chatty writes;
+override it with `-idle-duration`, `-chatty-duration`, and `-chatty-interval`
+when a shorter smoke run is needed:
+
+```sh
+go run ./cmd/s3s5-perf run -profile memory -idle-duration 200ms -chatty-duration 200ms -out benchmarks/results/local/quick.json
+```
+
 Update committed baseline files explicitly:
 
 ```sh

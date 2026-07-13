@@ -46,6 +46,8 @@ type Config struct {
 	ShortConnections int
 	IdleSessions     int
 	IdleDuration     time.Duration
+	ChattyDuration   time.Duration
+	ChattyInterval   time.Duration
 	PrefixBase       string
 	Delay            delay.DelayProfile
 	ScenarioNames    []string
@@ -156,10 +158,12 @@ func DefaultConfig(profile string) Config {
 		PollMin:          time.Millisecond,
 		PollMax:          20 * time.Millisecond,
 		WindowChunks:     16,
-		IdleTimeout:      3 * time.Second,
+		IdleTimeout:      30 * time.Second,
 		ShortConnections: 20,
 		IdleSessions:     20,
-		IdleDuration:     100 * time.Millisecond,
+		IdleDuration:     10 * time.Second,
+		ChattyDuration:   10 * time.Second,
+		ChattyInterval:   5 * time.Millisecond,
 		PrefixBase:       "perf",
 	}
 	if profile == ProfileSimulatedS3 {
@@ -174,7 +178,6 @@ func DefaultConfig(profile string) Config {
 		}
 		cfg.PollMin = 5 * time.Millisecond
 		cfg.PollMax = 25 * time.Millisecond
-		cfg.IdleDuration = 75 * time.Millisecond
 	}
 	return cfg
 }
@@ -237,7 +240,7 @@ func normalizeConfig(cfg Config) Config {
 		cfg.WindowChunks = 16
 	}
 	if cfg.IdleTimeout <= 0 {
-		cfg.IdleTimeout = 3 * time.Second
+		cfg.IdleTimeout = 30 * time.Second
 	}
 	if cfg.ShortConnections <= 0 {
 		cfg.ShortConnections = 20
@@ -246,7 +249,13 @@ func normalizeConfig(cfg Config) Config {
 		cfg.IdleSessions = 20
 	}
 	if cfg.IdleDuration <= 0 {
-		cfg.IdleDuration = 100 * time.Millisecond
+		cfg.IdleDuration = 10 * time.Second
+	}
+	if cfg.ChattyDuration <= 0 {
+		cfg.ChattyDuration = 10 * time.Second
+	}
+	if cfg.ChattyInterval <= 0 {
+		cfg.ChattyInterval = 5 * time.Millisecond
 	}
 	if cfg.PrefixBase == "" {
 		cfg.PrefixBase = "perf"
@@ -515,8 +524,8 @@ func ScenarioNames() []string {
 func scenarios() []scenario {
 	return []scenario{
 		{name: "one-byte-echo-active", description: "Open one SOCKS connection, send one byte, and read one echoed byte without a long idle period.", run: runOneByteActive},
-		{name: "one-byte-echo-after-idle", description: "Open one SOCKS connection, wait for polling backoff, then send and echo one byte.", run: runOneByteAfterIdle},
-		{name: "small-chatty-writes", description: "Send 100 ordered 100-byte writes with 5ms spacing and verify echoed order.", run: runSmallChattyWrites},
+		{name: "one-byte-echo-after-idle", description: "Open one SOCKS connection, hold it idle for the configured duration, then send and echo one byte.", run: runOneByteAfterIdle},
+		{name: "small-chatty-writes", description: "Send ordered 100-byte writes for the configured duration and verify echoed order.", run: runSmallChattyWrites},
 		{name: "bulk-one-mib", description: "Send and echo one contiguous MiB, verifying SHA-256 and exact byte count.", run: runBulkOneMiB},
 		{name: "short-connections", description: "Open sequential short SOCKS connections and exchange a small request/response on each.", run: runShortConnections},
 		{name: "concurrent-idle-sessions", description: "Open idle SOCKS sessions for a bounded period and measure background polling.", run: runConcurrentIdleSessions},
@@ -560,10 +569,7 @@ func runOneByteAfterIdle(ctx context.Context, env *environment, cfg Config) (Tra
 		return TrafficMetrics{}, nil, err
 	}
 	defer conn.Close()
-	idle := cfg.PollMax * 3
-	if idle < 20*time.Millisecond {
-		idle = 20 * time.Millisecond
-	}
+	idle := cfg.IdleDuration
 	if err := sleep(ctx, idle); err != nil {
 		return TrafficMetrics{}, nil, err
 	}
@@ -592,26 +598,26 @@ func runSmallChattyWrites(ctx context.Context, env *environment, cfg Config) (Tr
 		return TrafficMetrics{}, nil, err
 	}
 	defer conn.Close()
-	var sent, recv uint64
-	const writes = 100
 	const size = 100
-	for i := 0; i < writes; i++ {
-		payload := bytes.Repeat([]byte{byte(i)}, size)
-		got, err := writeRead(conn, payload)
-		if err != nil {
-			return TrafficMetrics{}, nil, err
-		}
-		if !bytes.Equal(got, payload) {
-			return TrafficMetrics{}, nil, fmt.Errorf("chatty write %d echo mismatch", i)
-		}
-		sent += uint64(len(payload))
-		recv += uint64(len(got))
-		if err := sleep(ctx, 5*time.Millisecond); err != nil {
-			return TrafficMetrics{}, nil, err
-		}
+	sent, recv, writes, err := runChattyExchanges(ctx, conn, 0, cfg.ChattyDuration, cfg.ChattyInterval, size)
+	if err != nil {
+		return TrafficMetrics{}, nil, err
 	}
 	_ = conn.Close()
-	return TrafficMetrics{BytesSent: sent, BytesReceived: recv, ExpectedBytes: sent, Connections: 1, Requests: writes}, map[string]any{"writes": writes, "write_size": size, "interval": "5ms"}, nil
+	traffic := TrafficMetrics{
+		BytesSent:     sent,
+		BytesReceived: recv,
+		ExpectedBytes: sent,
+		Connections:   1,
+		Requests:      writes,
+	}
+	params := map[string]any{
+		"writes":     writes,
+		"write_size": size,
+		"duration":   cfg.ChattyDuration.String(),
+		"interval":   cfg.ChattyInterval.String(),
+	}
+	return traffic, params, nil
 }
 
 func runBulkOneMiB(ctx context.Context, env *environment, cfg Config) (TrafficMetrics, map[string]any, error) {
@@ -748,22 +754,12 @@ func runMixedTraffic(ctx context.Context, env *environment, cfg Config) (Traffic
 				return
 			}
 			defer conn.Close()
-			var sent, recv uint64
-			for j := 0; j < 10; j++ {
-				payload := []byte(fmt.Sprintf("mixed-%d-%d", id, j))
-				got, err := writeRead(conn, payload)
-				if err != nil {
-					errCh <- err
-					return
-				}
-				if !bytes.Equal(got, payload) {
-					errCh <- fmt.Errorf("mixed chatty echo mismatch")
-					return
-				}
-				sent += uint64(len(payload))
-				recv += uint64(len(got))
+			sent, recv, writes, err := runChattyExchanges(ctx, conn, id+1, cfg.ChattyDuration, cfg.ChattyInterval, 100)
+			if err != nil {
+				errCh <- err
+				return
 			}
-			add(sent, recv, 1, 10)
+			add(sent, recv, 1, writes)
 		}(i)
 	}
 	for i := 0; i < 3; i++ {
@@ -787,7 +783,60 @@ func runMixedTraffic(ctx context.Context, env *environment, cfg Config) (Traffic
 			return traffic, nil, err
 		}
 	}
-	return traffic, map[string]any{"bulk_bytes": 256 * 1024, "chatty_streams": 3, "idle_streams": 3}, nil
+	return traffic, map[string]any{
+		"bulk_bytes":      256 * 1024,
+		"chatty_streams":  3,
+		"chatty_duration": cfg.ChattyDuration.String(),
+		"chatty_interval": cfg.ChattyInterval.String(),
+		"idle_streams":    3,
+		"idle_duration":   cfg.IdleDuration.String(),
+	}, nil
+}
+
+func runChattyExchanges(ctx context.Context, conn net.Conn, streamID int, duration, interval time.Duration, size int) (uint64, uint64, int, error) {
+	var sent, recv uint64
+	writes := 0
+	deadline := time.Now().Add(duration)
+	for writes == 0 || time.Now().Before(deadline) {
+		select {
+		case <-ctx.Done():
+			return sent, recv, writes, ctx.Err()
+		default:
+		}
+		payload := makeChattyPayload(streamID, writes, size)
+		got, err := writeRead(conn, payload)
+		if err != nil {
+			return sent, recv, writes, err
+		}
+		if !bytes.Equal(got, payload) {
+			return sent, recv, writes, fmt.Errorf("chatty write %d echo mismatch", writes)
+		}
+		sent += uint64(len(payload))
+		recv += uint64(len(got))
+		writes++
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			break
+		}
+		wait := interval
+		if remaining < wait {
+			wait = remaining
+		}
+		if wait > 0 {
+			if err := sleep(ctx, wait); err != nil {
+				return sent, recv, writes, err
+			}
+		}
+	}
+	return sent, recv, writes, nil
+}
+
+func makeChattyPayload(streamID, sequence, size int) []byte {
+	payload := make([]byte, size)
+	for i := range payload {
+		payload[i] = byte((streamID*31 + sequence + i) % 251)
+	}
+	return payload
 }
 
 func startSOCKS(ctx context.Context, client *tunnel.Client) (string, func(), error) {
