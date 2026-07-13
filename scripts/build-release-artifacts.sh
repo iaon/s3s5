@@ -24,6 +24,7 @@ build_archive() {
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="$LDFLAGS" -o "$out/s3s5-client" ./cmd/s3s5-client
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="$LDFLAGS" -o "$out/s3s5-server" ./cmd/s3s5-server
     CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="$LDFLAGS" -o "$out/s3s5-doctor" ./cmd/s3s5-doctor
+    CGO_ENABLED=0 GOOS="$goos" GOARCH="$goarch" go build -trimpath -ldflags="$LDFLAGS" -o "$out/s3s5-perf" ./cmd/s3s5-perf
   )
 
   install -m 0644 "$ROOT_DIR/README.md" "$out/README.md"

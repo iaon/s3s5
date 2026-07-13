@@ -92,3 +92,68 @@ It is a poor fit for:
 ## Benchmarking note
 
 Use MinIO for local profiling when possible. It removes external network variance and avoids AWS request charges while still exercising the same S3-compatible code paths.
+
+## Baseline Before v1 Optimizations
+
+P0 performance work records the current protocol v1 baseline without changing
+wire behavior. The benchmark harness exercises the full local path:
+
+```text
+SOCKS5 client -> s3s5 client -> ObjectStore -> s3s5 server -> TCP target
+```
+
+Run the fast memory profile:
+
+```sh
+make perf-test
+```
+
+Run a simulated object-store profile with deterministic delays:
+
+```sh
+make perf-test-simulated
+```
+
+Update committed baseline files explicitly:
+
+```sh
+make perf-baseline
+```
+
+Baseline files are stored under:
+
+```text
+benchmarks/results/baseline-v1-memory.json
+benchmarks/results/baseline-v1-simulated-s3.json
+benchmarks/reports/baseline-v1.md
+```
+
+Local ad hoc results go under `benchmarks/results/local/`, which is ignored by
+Git.
+
+The stable comparison points are request counts, polling misses, key classes,
+chunks, bytes, and derived ratios. Wall-clock timings from different machines
+or CI runs should not be compared directly.
+
+The generated report includes separate counts for:
+
+- data GET hits and misses
+- ACK GET and PUT operations
+- close HEAD checks
+- open LIST polling
+- operations per session
+- operations per MiB
+- sealed/plaintext size ratio
+
+Real S3 runs are opt-in only and require credentials in environment variables:
+
+```sh
+S3S5_ACCESS_KEY_ID=... \
+S3S5_SECRET_ACCESS_KEY=... \
+S3S5_BUCKET=... \
+go run ./cmd/s3s5-perf run -profile real-s3 -real-s3-opt-in -out benchmarks/results/local/real-s3.json
+```
+
+The real-S3 profile uses a random benchmark prefix and attempts cleanup at the
+end of each scenario. It never writes credentials, PSK values, session IDs,
+target hostnames, or full object keys to JSON or Markdown output.

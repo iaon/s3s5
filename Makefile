@@ -1,4 +1,4 @@
-.PHONY: build test test-race lint release-artifacts android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package server-package-arm64 server-package-all-arch server-package-deb-all-arch server-package-rpm-all-arch minio-up minio-test minio-down yandex-s3-smoke clean
+.PHONY: build test test-race lint release-artifacts perf-test perf-test-simulated perf-report perf-baseline android-build android-test android-docker-image android-docker-build android-docker-test server-package-image server-package-deb server-package-rpm server-package server-package-arm64 server-package-all-arch server-package-deb-all-arch server-package-rpm-all-arch minio-up minio-test minio-down yandex-s3-smoke clean
 
 GO ?= go
 export GOCACHE ?= $(CURDIR)/.cache/go-build
@@ -13,6 +13,7 @@ build:
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-client ./cmd/s3s5-client
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-server ./cmd/s3s5-server
 	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-doctor ./cmd/s3s5-doctor
+	$(GO) build -ldflags "$(LDFLAGS)" -o bin/s3s5-perf ./cmd/s3s5-perf
 
 test:
 	$(GO) test ./...
@@ -25,6 +26,18 @@ lint:
 
 release-artifacts:
 	./scripts/build-release-artifacts.sh
+
+perf-test:
+	$(GO) run ./cmd/s3s5-perf run -profile memory -out benchmarks/results/local/perf-memory.json
+
+perf-test-simulated:
+	$(GO) run ./cmd/s3s5-perf run -profile simulated-s3 -out benchmarks/results/local/perf-simulated-s3.json -short-connections 3 -idle-sessions 3 -idle-duration 50ms -put-delay 10ms -get-delay 10ms -head-delay 10ms -list-delay 12ms -delete-delay 10ms -jitter 1ms
+
+perf-report:
+	$(GO) run ./cmd/s3s5-perf report -in $${PERF_JSON:-benchmarks/results/baseline-v1-memory.json} -out $${PERF_REPORT:-benchmarks/reports/baseline-v1.md}
+
+perf-baseline:
+	$(GO) run ./cmd/s3s5-perf baseline
 
 android-build:
 	cd android-client && ./gradlew :app:assembleDebug

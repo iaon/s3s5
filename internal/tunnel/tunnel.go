@@ -82,11 +82,13 @@ func NewServer(cfg Config, pol *policy.Engine) (*Server, error) {
 }
 
 func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn net.Conn, reply func(byte) error) error {
+	startedAt := time.Now()
 	sessionID, err := protocol.NewSessionID()
 	if err != nil {
 		_ = reply(socks5.ReplyGeneralFailure)
 		return err
 	}
+	c.cfg.Stats.startSession(sessionID, startedAt)
 	req := protocol.OpenRequest{
 		Version:   protocol.Version,
 		SessionID: sessionID,
@@ -94,19 +96,24 @@ func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn n
 		CreatedAt: time.Now().UTC(),
 	}
 	if err := c.putJSON(ctx, protocol.OpenKey(c.cfg.Prefix, sessionID), "open", sessionID, "control", req); err != nil {
+		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
 		_ = reply(socks5.ReplyGeneralFailure)
 		return err
 	}
 	var result protocol.OpenResult
 	if err := c.waitJSON(ctx, protocol.OpenResultKey(c.cfg.Prefix, sessionID), "open-result", sessionID, "control", &result); err != nil {
+		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
 		_ = reply(socks5.ReplyHostUnreachable)
 		return err
 	}
 	if !result.Accepted {
+		c.cfg.Stats.rejectSession(sessionID, time.Since(startedAt))
 		_ = reply(socks5.ReplyHostUnreachable)
 		return fmt.Errorf("server rejected target: %s", result.Error)
 	}
+	c.cfg.Stats.openSession(time.Since(startedAt))
 	if err := reply(socks5.ReplySucceeded); err != nil {
+		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
 		return err
 	}
 	sessionCtx, cancel := context.WithCancel(ctx)
@@ -127,6 +134,7 @@ func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn n
 			cancel()
 		}
 	}
+	c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), first)
 	return first
 }
 
@@ -342,7 +350,10 @@ func streamToStore(ctx context.Context, cfg Config, sessionID, direction, side s
 			if err := cfg.Store.PutObject(ctx, protocol.DataKey(cfg.Prefix, direction, sessionID, seq), sealed, objectstore.PutOptions{ContentType: "application/octet-stream"}); err != nil {
 				return err
 			}
-			cfg.Stats.incChunksSent(n)
+			if seq == 0 {
+				cfg.Stats.recordFirstData(sessionID, direction, time.Now())
+			}
+			cfg.Stats.incChunksSent(n, len(sealed))
 			seq++
 			sent += int64(n)
 		}
@@ -388,7 +399,7 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 			if _, err := w.Write(plain); err != nil {
 				return err
 			}
-			cfg.Stats.incChunksReceived(len(plain))
+			cfg.Stats.incChunksReceived(len(plain), len(data))
 			received += int64(len(plain))
 			seq++
 			if seq-lastAck >= ackEvery {

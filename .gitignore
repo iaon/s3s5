@@ -7,6 +7,7 @@
 !/examples/.env.example
 /tmp/
 /.cache/
+/benchmarks/results/local/
 /android-client/.gradle/
 /android-client/app/build/
 *.log
