@@ -16,7 +16,7 @@ class TunnelClientTest {
     fun openResultCanBeDecodedFromStore() = runTest {
         val store = MemoryObjectStore()
         val session = "0123456789abcdef0123456789abcdef"
-        val result = OpenResult(sessionId = session, accepted = true, createdAt = "2026-01-01T00:00:00Z")
+        val result = OpenResult(sessionId = session, accepted = true, maxReceiveChunkSize = 65536, createdAt = "2026-01-01T00:00:00Z")
         store.putObject(
             Protocol.openResultKey("p", session),
             NoopCodec.seal("open-result", session, "control", 0, Protocol.run {
@@ -24,6 +24,7 @@ class TunnelClientTest {
                     .put("version", result.version)
                     .put("session_id", result.sessionId)
                     .put("accepted", result.accepted)
+                    .put("max_receive_chunk_size", result.maxReceiveChunkSize)
                     .put("created_at", result.createdAt)
                     .toString()
                     .toByteArray()

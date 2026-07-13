@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"strconv"
@@ -174,6 +175,48 @@ func TestInitialWindowDoesNotReadAck(t *testing.T) {
 	}
 }
 
+func TestSendWindowCachesAckProgress(t *testing.T) {
+	ctx := context.Background()
+	store := memory.New()
+	stats := &Stats{}
+	cfg := testConfig(store, s3crypto.NoopCodec{})
+	cfg.Stats = stats
+	cfg.WindowChunks = 2
+	sessionID := "session-window-cache"
+	window := &SendWindow{}
+	if err := waitWindow(ctx, cfg, sessionID, DirectionC2S, 1, window); err != nil {
+		t.Fatal(err)
+	}
+	if got := stats.Snapshot().GetObjects; got != 0 {
+		t.Fatalf("initial window should not read ACK objects, got %d GETs", got)
+	}
+	if err := putAck(ctx, cfg, sessionID, DirectionC2S, 5); err != nil {
+		t.Fatal(err)
+	}
+	stats = &Stats{}
+	cfg.Stats = stats
+	if err := waitWindow(ctx, cfg, sessionID, DirectionC2S, 2, window); err != nil {
+		t.Fatal(err)
+	}
+	if got := stats.Snapshot().GetObjects; got != 1 {
+		t.Fatalf("expected one ACK GET, got %d", got)
+	}
+	if err := putAck(ctx, cfg, sessionID, DirectionC2S, 1); err != nil {
+		t.Fatal(err)
+	}
+	stats = &Stats{}
+	cfg.Stats = stats
+	if err := waitWindow(ctx, cfg, sessionID, DirectionC2S, 6, window); err != nil {
+		t.Fatal(err)
+	}
+	if got := stats.Snapshot().GetObjects; got != 0 {
+		t.Fatalf("cached ACK should allow seq without reread, got %d GETs", got)
+	}
+	if window.AckedNextSeq != 5 {
+		t.Fatalf("stale ACK reduced cached state to %d", window.AckedNextSeq)
+	}
+}
+
 func TestStreamFromStoreBatchesAck(t *testing.T) {
 	ctx := context.Background()
 	store := memory.New()
@@ -204,8 +247,36 @@ func TestStreamFromStoreBatchesAck(t *testing.T) {
 	if out.String() != "abcdefghijkl" {
 		t.Fatalf("stream output = %q", out.String())
 	}
-	if got := stats.Snapshot().PutObjects; got != 1 {
-		t.Fatalf("expected one final ACK PUT for short stream, got %d", got)
+	if got := stats.Snapshot().PutObjects; got != 0 {
+		t.Fatalf("expected no final ACK PUT for short stream, got %d", got)
+	}
+}
+
+func TestServerListOpenKeysReadsAllPages(t *testing.T) {
+	ctx := context.Background()
+	store := memory.New()
+	stats := &Stats{}
+	cfg := testConfig(store, s3crypto.NoopCodec{})
+	cfg.Stats = stats
+	server, err := NewServer(cfg, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 1005; i++ {
+		sessionID := fmt.Sprintf("%032d", i)
+		if err := store.PutObject(ctx, protocol.OpenKey(cfg.Prefix, sessionID), []byte("x"), objectstore.PutOptions{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	keys, err := server.listOpenKeys(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(keys) != 1005 {
+		t.Fatalf("open keys = %d, want 1005", len(keys))
+	}
+	if got := stats.Snapshot().ListObjects; got != 2 {
+		t.Fatalf("LIST count = %d, want 2", got)
 	}
 }
 

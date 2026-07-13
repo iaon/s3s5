@@ -36,24 +36,27 @@ const (
 type StoreFactory func(ctx context.Context, scenario string) (store objectstore.ObjectStore, provider string, cleanup func(context.Context) error, err error)
 
 type Config struct {
-	Profile          string
-	Provider         string
-	ChunkSize        int
-	PollMin          time.Duration
-	PollMax          time.Duration
-	WindowChunks     uint64
-	IdleTimeout      time.Duration
-	ShortConnections int
-	IdleSessions     int
-	IdleDuration     time.Duration
-	ChattyDuration   time.Duration
-	ChattyInterval   time.Duration
-	PrefixBase       string
-	Delay            delay.DelayProfile
-	ScenarioNames    []string
-	GitCommit        string
-	DirtyWorktree    bool
-	StoreFactory     StoreFactory
+	Profile               string
+	Provider              string
+	ChunkSize             int
+	FlushDelay            time.Duration
+	PollMin               time.Duration
+	PollMax               time.Duration
+	ActivePollDuration    time.Duration
+	WindowChunks          uint64
+	CloseCheckAfterMisses int
+	IdleTimeout           time.Duration
+	ShortConnections      int
+	IdleSessions          int
+	IdleDuration          time.Duration
+	ChattyDuration        time.Duration
+	ChattyInterval        time.Duration
+	PrefixBase            string
+	Delay                 delay.DelayProfile
+	ScenarioNames         []string
+	GitCommit             string
+	DirtyWorktree         bool
+	StoreFactory          StoreFactory
 }
 
 type RunResult struct {
@@ -71,11 +74,14 @@ type RunResult struct {
 }
 
 type ProtocolConfig struct {
-	ChunkSize    int    `json:"chunk_size"`
-	PollMin      string `json:"poll_min"`
-	PollMax      string `json:"poll_max"`
-	WindowChunks uint64 `json:"window_chunks"`
-	IdleTimeout  string `json:"idle_timeout"`
+	ChunkSize             int    `json:"chunk_size"`
+	FlushDelay            string `json:"flush_delay"`
+	PollMin               string `json:"poll_min"`
+	PollMax               string `json:"poll_max"`
+	ActivePollDuration    string `json:"active_poll_duration"`
+	WindowChunks          uint64 `json:"window_chunks"`
+	CloseCheckAfterMisses int    `json:"close_check_after_misses"`
+	IdleTimeout           string `json:"idle_timeout"`
 }
 
 type ScenarioResult struct {
@@ -105,22 +111,27 @@ type TrafficMetrics struct {
 }
 
 type SessionMetrics struct {
-	SessionsStarted    uint64                `json:"sessions_started"`
-	SessionsOpened     uint64                `json:"sessions_opened"`
-	SessionsRejected   uint64                `json:"sessions_rejected"`
-	SessionsCompleted  uint64                `json:"sessions_completed"`
-	SessionsFailed     uint64                `json:"sessions_failed"`
-	ActiveSessions     int64                 `json:"active_sessions"`
-	ChunksSent         uint64                `json:"chunks_sent"`
-	ChunksReceived     uint64                `json:"chunks_received"`
-	PlaintextBytesSent uint64                `json:"plaintext_bytes_sent"`
-	PlaintextBytesRecv uint64                `json:"plaintext_bytes_received"`
-	SealedBytesSent    uint64                `json:"sealed_bytes_sent"`
-	SealedBytesRecv    uint64                `json:"sealed_bytes_received"`
-	TimeToOpenResult   metrics.DurationStats `json:"time_to_open_result"`
-	SessionDuration    metrics.DurationStats `json:"session_duration"`
-	TimeToFirstC2S     metrics.DurationStats `json:"time_to_first_c2s_object"`
-	TimeToFirstS2C     metrics.DurationStats `json:"time_to_first_s2c_object"`
+	SessionsStarted          uint64                `json:"sessions_started"`
+	SessionsOpened           uint64                `json:"sessions_opened"`
+	SessionsRejected         uint64                `json:"sessions_rejected"`
+	SessionsCompleted        uint64                `json:"sessions_completed"`
+	SessionsFailed           uint64                `json:"sessions_failed"`
+	ActiveSessions           int64                 `json:"active_sessions"`
+	ChunksSent               uint64                `json:"chunks_sent"`
+	ChunksReceived           uint64                `json:"chunks_received"`
+	PlaintextBytesSent       uint64                `json:"plaintext_bytes_sent"`
+	PlaintextBytesRecv       uint64                `json:"plaintext_bytes_received"`
+	SealedBytesSent          uint64                `json:"sealed_bytes_sent"`
+	SealedBytesRecv          uint64                `json:"sealed_bytes_received"`
+	SocketReads              uint64                `json:"socket_reads_total"`
+	AggregationFlushSize     uint64                `json:"aggregation_flush_size"`
+	AggregationFlushDeadline uint64                `json:"aggregation_flush_deadline"`
+	AggregationFlushEOF      uint64                `json:"aggregation_flush_eof"`
+	AggregationFlushError    uint64                `json:"aggregation_flush_error"`
+	TimeToOpenResult         metrics.DurationStats `json:"time_to_open_result"`
+	SessionDuration          metrics.DurationStats `json:"session_duration"`
+	TimeToFirstC2S           metrics.DurationStats `json:"time_to_first_c2s_object"`
+	TimeToFirstS2C           metrics.DurationStats `json:"time_to_first_s2c_object"`
 }
 
 type DerivedMetrics struct {
@@ -152,19 +163,22 @@ type environment struct {
 
 func DefaultConfig(profile string) Config {
 	cfg := Config{
-		Profile:          profile,
-		Provider:         profile,
-		ChunkSize:        64 * 1024,
-		PollMin:          time.Millisecond,
-		PollMax:          20 * time.Millisecond,
-		WindowChunks:     16,
-		IdleTimeout:      30 * time.Second,
-		ShortConnections: 20,
-		IdleSessions:     20,
-		IdleDuration:     10 * time.Second,
-		ChattyDuration:   10 * time.Second,
-		ChattyInterval:   5 * time.Millisecond,
-		PrefixBase:       "perf",
+		Profile:               profile,
+		Provider:              profile,
+		ChunkSize:             64 * 1024,
+		FlushDelay:            10 * time.Millisecond,
+		PollMin:               time.Millisecond,
+		PollMax:               20 * time.Millisecond,
+		ActivePollDuration:    500 * time.Millisecond,
+		WindowChunks:          16,
+		CloseCheckAfterMisses: 4,
+		IdleTimeout:           30 * time.Second,
+		ShortConnections:      20,
+		IdleSessions:          20,
+		IdleDuration:          10 * time.Second,
+		ChattyDuration:        10 * time.Second,
+		ChattyInterval:        5 * time.Millisecond,
+		PrefixBase:            "perf",
 	}
 	if profile == ProfileSimulatedS3 {
 		cfg.Delay = delay.DelayProfile{
@@ -195,11 +209,14 @@ func Run(ctx context.Context, cfg Config) (RunResult, error) {
 		Profile:       cfg.Profile,
 		Provider:      cfg.Provider,
 		Config: ProtocolConfig{
-			ChunkSize:    cfg.ChunkSize,
-			PollMin:      cfg.PollMin.String(),
-			PollMax:      cfg.PollMax.String(),
-			WindowChunks: cfg.WindowChunks,
-			IdleTimeout:  cfg.IdleTimeout.String(),
+			ChunkSize:             cfg.ChunkSize,
+			FlushDelay:            cfg.FlushDelay.String(),
+			PollMin:               cfg.PollMin.String(),
+			PollMax:               cfg.PollMax.String(),
+			ActivePollDuration:    cfg.ActivePollDuration.String(),
+			WindowChunks:          cfg.WindowChunks,
+			CloseCheckAfterMisses: cfg.CloseCheckAfterMisses,
+			IdleTimeout:           cfg.IdleTimeout.String(),
 		},
 	}
 	selected := selectScenarios(cfg.ScenarioNames)
@@ -227,6 +244,9 @@ func normalizeConfig(cfg Config) Config {
 	if cfg.ChunkSize <= 0 {
 		cfg.ChunkSize = 64 * 1024
 	}
+	if cfg.FlushDelay < 0 {
+		cfg.FlushDelay = 0
+	}
 	if cfg.PollMin <= 0 {
 		cfg.PollMin = time.Millisecond
 	}
@@ -238,6 +258,12 @@ func normalizeConfig(cfg Config) Config {
 	}
 	if cfg.WindowChunks == 0 {
 		cfg.WindowChunks = 16
+	}
+	if cfg.ActivePollDuration < 0 {
+		cfg.ActivePollDuration = 0
+	}
+	if cfg.CloseCheckAfterMisses <= 0 {
+		cfg.CloseCheckAfterMisses = 4
 	}
 	if cfg.IdleTimeout <= 0 {
 		cfg.IdleTimeout = 30 * time.Second
@@ -310,15 +336,18 @@ func newEnvironment(parent context.Context, cfg Config, scenarioName string) (*e
 	store := metrics.InstrumentedStore{Next: base, Collector: collector}
 	stats := &tunnel.Stats{}
 	tcfg := tunnel.Config{
-		Store:        store,
-		Codec:        mustCodec(),
-		Stats:        stats,
-		Prefix:       cfg.PrefixBase + "/" + scenarioName,
-		ChunkSize:    cfg.ChunkSize,
-		PollMin:      cfg.PollMin,
-		PollMax:      cfg.PollMax,
-		WindowChunks: cfg.WindowChunks,
-		IdleTimeout:  cfg.IdleTimeout,
+		Store:                 store,
+		Codec:                 mustCodec(),
+		Stats:                 stats,
+		Prefix:                cfg.PrefixBase + "/" + scenarioName,
+		ChunkSize:             cfg.ChunkSize,
+		FlushDelay:            cfg.FlushDelay,
+		PollMin:               cfg.PollMin,
+		PollMax:               cfg.PollMax,
+		ActivePollDuration:    cfg.ActivePollDuration,
+		WindowChunks:          cfg.WindowChunks,
+		CloseCheckAfterMisses: cfg.CloseCheckAfterMisses,
+		IdleTimeout:           cfg.IdleTimeout,
 	}
 	pol, err := policy.New(policy.Config{AllowPrivate: true})
 	if err != nil {
@@ -383,22 +412,27 @@ func mustCodec() s3crypto.Codec {
 
 func sessionMetrics(s tunnel.StatsSnapshot) SessionMetrics {
 	return SessionMetrics{
-		SessionsStarted:    s.SessionsStarted,
-		SessionsOpened:     s.SessionsOpened,
-		SessionsRejected:   s.SessionsRejected,
-		SessionsCompleted:  s.SessionsCompleted,
-		SessionsFailed:     s.SessionsFailed,
-		ActiveSessions:     s.ActiveSessions,
-		ChunksSent:         s.ChunksSent,
-		ChunksReceived:     s.ChunksReceived,
-		PlaintextBytesSent: s.BytesSent,
-		PlaintextBytesRecv: s.BytesReceived,
-		SealedBytesSent:    s.SealedBytesSent,
-		SealedBytesRecv:    s.SealedBytesReceived,
-		TimeToOpenResult:   metrics.SummarizeDurations(s.TimeToOpenResult),
-		SessionDuration:    metrics.SummarizeDurations(s.SessionDurations),
-		TimeToFirstC2S:     metrics.SummarizeDurations(s.TimeToFirstC2SData),
-		TimeToFirstS2C:     metrics.SummarizeDurations(s.TimeToFirstS2CData),
+		SessionsStarted:          s.SessionsStarted,
+		SessionsOpened:           s.SessionsOpened,
+		SessionsRejected:         s.SessionsRejected,
+		SessionsCompleted:        s.SessionsCompleted,
+		SessionsFailed:           s.SessionsFailed,
+		ActiveSessions:           s.ActiveSessions,
+		ChunksSent:               s.ChunksSent,
+		ChunksReceived:           s.ChunksReceived,
+		PlaintextBytesSent:       s.BytesSent,
+		PlaintextBytesRecv:       s.BytesReceived,
+		SealedBytesSent:          s.SealedBytesSent,
+		SealedBytesRecv:          s.SealedBytesReceived,
+		SocketReads:              s.SocketReads,
+		AggregationFlushSize:     s.AggregationFlushSize,
+		AggregationFlushDeadline: s.AggregationFlushDeadline,
+		AggregationFlushEOF:      s.AggregationFlushEOF,
+		AggregationFlushError:    s.AggregationFlushError,
+		TimeToOpenResult:         metrics.SummarizeDurations(s.TimeToOpenResult),
+		SessionDuration:          metrics.SummarizeDurations(s.SessionDurations),
+		TimeToFirstC2S:           metrics.SummarizeDurations(s.TimeToFirstC2SData),
+		TimeToFirstS2C:           metrics.SummarizeDurations(s.TimeToFirstS2CData),
 	}
 }
 

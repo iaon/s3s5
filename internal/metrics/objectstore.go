@@ -209,16 +209,21 @@ func (s InstrumentedStore) HeadObject(ctx context.Context, key string) (objectst
 }
 
 func (s InstrumentedStore) ListPrefix(ctx context.Context, prefix string, opts objectstore.ListOptions) ([]string, error) {
+	page, err := s.ListPrefixPage(ctx, prefix, opts)
+	return page.Keys, err
+}
+
+func (s InstrumentedStore) ListPrefixPage(ctx context.Context, prefix string, opts objectstore.ListOptions) (objectstore.ListPage, error) {
 	start := time.Now()
-	keys, err := s.Next.ListPrefix(ctx, prefix, opts)
+	page, err := s.Next.ListPrefixPage(ctx, prefix, opts)
 	var responseBytes uint64
 	if err == nil {
-		for _, key := range keys {
+		for _, key := range page.Keys {
 			responseBytes += uint64(len(key))
 		}
 	}
 	s.observe(OperationList, ClassifyListPrefix(prefix), err, time.Since(start), 0, responseBytes)
-	return keys, err
+	return page, err
 }
 
 func (s InstrumentedStore) DeleteObject(ctx context.Context, key string) error {

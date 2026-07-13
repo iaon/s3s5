@@ -10,7 +10,7 @@ import (
 )
 
 func RenderMarkdown(w io.Writer, result RunResult) error {
-	if _, err := fmt.Fprintf(w, "# s3s5 Performance Baseline\n\n"); err != nil {
+	if _, err := fmt.Fprintf(w, "# s3s5 Performance Report\n\n"); err != nil {
 		return err
 	}
 	fmt.Fprintf(w, "## Environment\n\n")
@@ -22,9 +22,9 @@ func RenderMarkdown(w io.Writer, result RunResult) error {
 	fmt.Fprintf(w, "- Profile/provider: `%s` / `%s`\n\n", result.Profile, result.Provider)
 
 	fmt.Fprintf(w, "## Protocol Configuration\n\n")
-	fmt.Fprintf(w, "| Chunk size | Poll min | Poll max | Window chunks | Idle timeout |\n")
-	fmt.Fprintf(w, "| ---: | ---: | ---: | ---: | ---: |\n")
-	fmt.Fprintf(w, "| %d | %s | %s | %d | %s |\n\n", result.Config.ChunkSize, result.Config.PollMin, result.Config.PollMax, result.Config.WindowChunks, result.Config.IdleTimeout)
+	fmt.Fprintf(w, "| Chunk size | Flush delay | Poll min | Poll max | Active poll | Window chunks | Close misses | Idle timeout |\n")
+	fmt.Fprintf(w, "| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
+	fmt.Fprintf(w, "| %d | %s | %s | %s | %s | %d | %d | %s |\n\n", result.Config.ChunkSize, result.Config.FlushDelay, result.Config.PollMin, result.Config.PollMax, result.Config.ActivePollDuration, result.Config.WindowChunks, result.Config.CloseCheckAfterMisses, result.Config.IdleTimeout)
 
 	fmt.Fprintf(w, "## Scenario Summary\n\n")
 	fmt.Fprintf(w, "| Scenario | Status | Bytes sent | Bytes received | Duration ms | PUT | GET hit | GET miss | HEAD | LIST | DELETE | Ops/session | Ops/MiB |\n")

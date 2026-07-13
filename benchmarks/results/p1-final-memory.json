@@ -1,0 +1,3035 @@
+{
+  "schema_version": 1,
+  "timestamp": "2026-07-13T15:06:11.848352144Z",
+  "git_commit": "4eda91f1c713",
+  "dirty_worktree": true,
+  "go_version": "go1.22.2",
+  "os": "linux",
+  "arch": "amd64",
+  "profile": "memory",
+  "provider": "memory",
+  "config": {
+    "chunk_size": 65536,
+    "flush_delay": "10ms",
+    "poll_min": "1ms",
+    "poll_max": "20ms",
+    "active_poll_duration": "500ms",
+    "window_chunks": 16,
+    "close_check_after_misses": 4,
+    "idle_timeout": "30s"
+  },
+  "scenarios": [
+    {
+      "name": "one-byte-echo-active",
+      "description": "Open one SOCKS connection, send one byte, and read one echoed byte without a long idle period.",
+      "status": "passed",
+      "parameters": {},
+      "duration_ms": 94,
+      "traffic": {
+        "bytes_sent": 1,
+        "bytes_received": 1,
+        "expected_bytes": 1,
+        "connections": 1,
+        "requests": 1,
+        "rtt_ms": 27
+      },
+      "session_metrics": {
+        "sessions_started": 1,
+        "sessions_opened": 1,
+        "sessions_rejected": 0,
+        "sessions_completed": 1,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 2,
+        "chunks_received": 2,
+        "plaintext_bytes_sent": 2,
+        "plaintext_bytes_received": 2,
+        "sealed_bytes_sent": 82,
+        "sealed_bytes_received": 82,
+        "socket_reads_total": 4,
+        "aggregation_flush_size": 0,
+        "aggregation_flush_deadline": 2,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 1,
+          "total_ms": 3.835333,
+          "min_ms": 3.835333,
+          "p50_ms": 3.835333,
+          "p95_ms": 3.835333,
+          "p99_ms": 3.835333,
+          "max_ms": 3.835333
+        },
+        "session_duration": {
+          "count": 1,
+          "total_ms": 84.494321,
+          "min_ms": 84.494321,
+          "p50_ms": 84.494321,
+          "p95_ms": 84.494321,
+          "p99_ms": 84.494321,
+          "max_ms": 84.494321
+        },
+        "time_to_first_c2s_object": {
+          "count": 1,
+          "total_ms": 15.015348,
+          "min_ms": 15.015348,
+          "p50_ms": 15.015348,
+          "p95_ms": 15.015348,
+          "p99_ms": 15.015348,
+          "max_ms": 15.015348
+        },
+        "time_to_first_s2c_object": {
+          "count": 1,
+          "total_ms": 30.503835,
+          "min_ms": 30.503835,
+          "p50_ms": 30.503835,
+          "p95_ms": 30.503835,
+          "p99_ms": 30.503835,
+          "max_ms": 30.503835
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001067,
+              "min_ms": 0.001067,
+              "p50_ms": 0.001067,
+              "p95_ms": 0.001067,
+              "p99_ms": 0.001067,
+              "max_ms": 0.001067
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 16,
+            "duration": {
+              "count": 16,
+              "total_ms": 0.028361,
+              "min_ms": 0.000397,
+              "p50_ms": 0.001271,
+              "p95_ms": 0.004468,
+              "p99_ms": 0.005251,
+              "max_ms": 0.005251
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001304,
+              "min_ms": 0.001304,
+              "p50_ms": 0.001304,
+              "p95_ms": 0.001304,
+              "p99_ms": 0.001304,
+              "max_ms": 0.001304
+            },
+            "request_bytes": 0,
+            "response_bytes": 41
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 17,
+            "duration": {
+              "count": 17,
+              "total_ms": 0.023855,
+              "min_ms": 0.000354,
+              "p50_ms": 0.001145,
+              "p95_ms": 0.003043,
+              "p99_ms": 0.004762,
+              "max_ms": 0.004762
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000741,
+              "min_ms": 0.000741,
+              "p50_ms": 0.000741,
+              "p95_ms": 0.000741,
+              "p99_ms": 0.000741,
+              "max_ms": 0.000741
+            },
+            "request_bytes": 0,
+            "response_bytes": 41
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000893,
+              "min_ms": 0.000893,
+              "p50_ms": 0.000893,
+              "p95_ms": 0.000893,
+              "p99_ms": 0.000893,
+              "max_ms": 0.000893
+            },
+            "request_bytes": 0,
+            "response_bytes": 354
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.003139,
+              "min_ms": 0.001265,
+              "p50_ms": 0.001874,
+              "p95_ms": 0.001874,
+              "p99_ms": 0.001874,
+              "max_ms": 0.001874
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.00344,
+              "min_ms": 0.00344,
+              "p50_ms": 0.00344,
+              "p95_ms": 0.00344,
+              "p99_ms": 0.00344,
+              "max_ms": 0.00344
+            },
+            "request_bytes": 0,
+            "response_bytes": 298
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 3,
+            "duration": {
+              "count": 3,
+              "total_ms": 0.001619,
+              "min_ms": 0.000515,
+              "p50_ms": 0.000541,
+              "p95_ms": 0.000563,
+              "p99_ms": 0.000563,
+              "max_ms": 0.000563
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000716,
+              "min_ms": 0.000716,
+              "p50_ms": 0.000716,
+              "p95_ms": 0.000716,
+              "p99_ms": 0.000716,
+              "max_ms": 0.000716
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 3,
+            "duration": {
+              "count": 3,
+              "total_ms": 0.001981,
+              "min_ms": 0.000529,
+              "p50_ms": 0.000554,
+              "p95_ms": 0.000898,
+              "p99_ms": 0.000898,
+              "max_ms": 0.000898
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000698,
+              "min_ms": 0.000698,
+              "p50_ms": 0.000698,
+              "p95_ms": 0.000698,
+              "p99_ms": 0.000698,
+              "max_ms": 0.000698
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 9,
+            "duration": {
+              "count": 9,
+              "total_ms": 0.033023,
+              "min_ms": 0.001499,
+              "p50_ms": 0.00229,
+              "p95_ms": 0.008433,
+              "p99_ms": 0.008433,
+              "max_ms": 0.008433
+            },
+            "request_bytes": 0,
+            "response_bytes": 71
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001134,
+              "min_ms": 0.001134,
+              "p50_ms": 0.001134,
+              "p95_ms": 0.001134,
+              "p99_ms": 0.001134,
+              "max_ms": 0.001134
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001351,
+              "min_ms": 0.001351,
+              "p50_ms": 0.001351,
+              "p95_ms": 0.001351,
+              "p99_ms": 0.001351,
+              "max_ms": 0.001351
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001277,
+              "min_ms": 0.001277,
+              "p50_ms": 0.001277,
+              "p95_ms": 0.001277,
+              "p99_ms": 0.001277,
+              "max_ms": 0.001277
+            },
+            "request_bytes": 41,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001283,
+              "min_ms": 0.001283,
+              "p50_ms": 0.001283,
+              "p95_ms": 0.001283,
+              "p99_ms": 0.001283,
+              "max_ms": 0.001283
+            },
+            "request_bytes": 41,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.002171,
+              "min_ms": 0.002171,
+              "p50_ms": 0.002171,
+              "p95_ms": 0.002171,
+              "p99_ms": 0.002171,
+              "max_ms": 0.002171
+            },
+            "request_bytes": 354,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001523,
+              "min_ms": 0.001523,
+              "p50_ms": 0.001523,
+              "p95_ms": 0.001523,
+              "p99_ms": 0.001523,
+              "max_ms": 0.001523
+            },
+            "request_bytes": 298,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 63,
+        "s3_operations_per_session": 63,
+        "s3_operations_per_mib": 66060288,
+        "get_misses_per_received_data_object": 16.5,
+        "head_operations_per_session": 8,
+        "list_operations_per_opened_session": 9,
+        "ack_get_per_data_put": 0,
+        "ack_put_per_received_data_object": 0,
+        "sealed_plaintext_size_ratio": 41
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "one-byte-echo-after-idle",
+      "description": "Open one SOCKS connection, hold it idle for the configured duration, then send and echo one byte.",
+      "status": "passed",
+      "parameters": {
+        "idle": "10s"
+      },
+      "duration_ms": 10094,
+      "traffic": {
+        "bytes_sent": 1,
+        "bytes_received": 1,
+        "expected_bytes": 1,
+        "connections": 1,
+        "requests": 1,
+        "idle_ms": 10000,
+        "rtt_ms": 26
+      },
+      "session_metrics": {
+        "sessions_started": 1,
+        "sessions_opened": 1,
+        "sessions_rejected": 0,
+        "sessions_completed": 1,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 2,
+        "chunks_received": 2,
+        "plaintext_bytes_sent": 2,
+        "plaintext_bytes_received": 2,
+        "sealed_bytes_sent": 82,
+        "sealed_bytes_received": 82,
+        "socket_reads_total": 4,
+        "aggregation_flush_size": 0,
+        "aggregation_flush_deadline": 2,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 1,
+          "total_ms": 3.700165,
+          "min_ms": 3.700165,
+          "p50_ms": 3.700165,
+          "p95_ms": 3.700165,
+          "p99_ms": 3.700165,
+          "max_ms": 3.700165
+        },
+        "session_duration": {
+          "count": 1,
+          "total_ms": 10086.308986,
+          "min_ms": 10086.308986,
+          "p50_ms": 10086.308986,
+          "p95_ms": 10086.308986,
+          "p99_ms": 10086.308986,
+          "max_ms": 10086.308986
+        },
+        "time_to_first_c2s_object": {
+          "count": 1,
+          "total_ms": 10014.8904,
+          "min_ms": 10014.8904,
+          "p50_ms": 10014.8904,
+          "p95_ms": 10014.8904,
+          "p99_ms": 10014.8904,
+          "max_ms": 10014.8904
+        },
+        "time_to_first_s2c_object": {
+          "count": 1,
+          "total_ms": 10027.145371,
+          "min_ms": 10027.145371,
+          "p50_ms": 10027.145371,
+          "p95_ms": 10027.145371,
+          "p99_ms": 10027.145371,
+          "max_ms": 10027.145371
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000905,
+              "min_ms": 0.000905,
+              "p50_ms": 0.000905,
+              "p95_ms": 0.000905,
+              "p99_ms": 0.000905,
+              "max_ms": 0.000905
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 506,
+            "duration": {
+              "count": 506,
+              "total_ms": 1.262038,
+              "min_ms": 0.00039,
+              "p50_ms": 0.002208,
+              "p95_ms": 0.003808,
+              "p99_ms": 0.016122,
+              "max_ms": 0.029499
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.0062,
+              "min_ms": 0.0062,
+              "p50_ms": 0.0062,
+              "p95_ms": 0.0062,
+              "p99_ms": 0.0062,
+              "max_ms": 0.0062
+            },
+            "request_bytes": 0,
+            "response_bytes": 41
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 507,
+            "duration": {
+              "count": 507,
+              "total_ms": 0.929229,
+              "min_ms": 0.000371,
+              "p50_ms": 0.001204,
+              "p95_ms": 0.002812,
+              "p99_ms": 0.014766,
+              "max_ms": 0.058258
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001368,
+              "min_ms": 0.001368,
+              "p50_ms": 0.001368,
+              "p95_ms": 0.001368,
+              "p99_ms": 0.001368,
+              "max_ms": 0.001368
+            },
+            "request_bytes": 0,
+            "response_bytes": 41
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000775,
+              "min_ms": 0.000775,
+              "p50_ms": 0.000775,
+              "p95_ms": 0.000775,
+              "p99_ms": 0.000775,
+              "max_ms": 0.000775
+            },
+            "request_bytes": 0,
+            "response_bytes": 354
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.002179,
+              "min_ms": 0.000487,
+              "p50_ms": 0.001692,
+              "p95_ms": 0.001692,
+              "p99_ms": 0.001692,
+              "max_ms": 0.001692
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.006517,
+              "min_ms": 0.006517,
+              "p50_ms": 0.006517,
+              "p95_ms": 0.006517,
+              "p99_ms": 0.006517,
+              "max_ms": 0.006517
+            },
+            "request_bytes": 0,
+            "response_bytes": 298
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 125,
+            "duration": {
+              "count": 125,
+              "total_ms": 0.091681,
+              "min_ms": 0.000473,
+              "p50_ms": 0.000555,
+              "p95_ms": 0.001188,
+              "p99_ms": 0.001414,
+              "max_ms": 0.010124
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000626,
+              "min_ms": 0.000626,
+              "p50_ms": 0.000626,
+              "p95_ms": 0.000626,
+              "p99_ms": 0.000626,
+              "max_ms": 0.000626
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 125,
+            "duration": {
+              "count": 125,
+              "total_ms": 0.102131,
+              "min_ms": 0.000446,
+              "p50_ms": 0.000547,
+              "p95_ms": 0.00106,
+              "p99_ms": 0.010812,
+              "max_ms": 0.016095
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000667,
+              "min_ms": 0.000667,
+              "p50_ms": 0.000667,
+              "p95_ms": 0.000667,
+              "p99_ms": 0.000667,
+              "max_ms": 0.000667
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 499,
+            "duration": {
+              "count": 499,
+              "total_ms": 1.902569,
+              "min_ms": 0.000994,
+              "p50_ms": 0.003294,
+              "p95_ms": 0.006312,
+              "p99_ms": 0.02089,
+              "max_ms": 0.026678
+            },
+            "request_bytes": 0,
+            "response_bytes": 75
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001222,
+              "min_ms": 0.001222,
+              "p50_ms": 0.001222,
+              "p95_ms": 0.001222,
+              "p99_ms": 0.001222,
+              "max_ms": 0.001222
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001376,
+              "min_ms": 0.001376,
+              "p50_ms": 0.001376,
+              "p95_ms": 0.001376,
+              "p99_ms": 0.001376,
+              "max_ms": 0.001376
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.0028,
+              "min_ms": 0.0028,
+              "p50_ms": 0.0028,
+              "p95_ms": 0.0028,
+              "p99_ms": 0.0028,
+              "max_ms": 0.0028
+            },
+            "request_bytes": 41,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001304,
+              "min_ms": 0.001304,
+              "p50_ms": 0.001304,
+              "p95_ms": 0.001304,
+              "p99_ms": 0.001304,
+              "max_ms": 0.001304
+            },
+            "request_bytes": 41,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.006282,
+              "min_ms": 0.006282,
+              "p50_ms": 0.006282,
+              "p95_ms": 0.006282,
+              "p99_ms": 0.006282,
+              "max_ms": 0.006282
+            },
+            "request_bytes": 354,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001174,
+              "min_ms": 0.001174,
+              "p50_ms": 0.001174,
+              "p95_ms": 0.001174,
+              "p99_ms": 0.001174,
+              "max_ms": 0.001174
+            },
+            "request_bytes": 298,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 1777,
+        "s3_operations_per_session": 1777,
+        "s3_operations_per_mib": 1863319552,
+        "get_misses_per_received_data_object": 506.5,
+        "head_operations_per_session": 252,
+        "list_operations_per_opened_session": 499,
+        "ack_get_per_data_put": 0,
+        "ack_put_per_received_data_object": 0,
+        "sealed_plaintext_size_ratio": 41
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "small-chatty-writes",
+      "description": "Send ordered 100-byte writes for the configured duration and verify echoed order.",
+      "status": "passed",
+      "parameters": {
+        "duration": "10s",
+        "interval": "5ms",
+        "write_size": 100,
+        "writes": 224
+      },
+      "duration_ms": 10090,
+      "traffic": {
+        "bytes_sent": 22400,
+        "bytes_received": 22400,
+        "expected_bytes": 22400,
+        "connections": 1,
+        "requests": 224
+      },
+      "session_metrics": {
+        "sessions_started": 1,
+        "sessions_opened": 1,
+        "sessions_rejected": 0,
+        "sessions_completed": 1,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 448,
+        "chunks_received": 448,
+        "plaintext_bytes_sent": 44800,
+        "plaintext_bytes_received": 44800,
+        "sealed_bytes_sent": 62720,
+        "sealed_bytes_received": 62720,
+        "socket_reads_total": 896,
+        "aggregation_flush_size": 0,
+        "aggregation_flush_deadline": 448,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 1,
+          "total_ms": 3.56882,
+          "min_ms": 3.56882,
+          "p50_ms": 3.56882,
+          "p95_ms": 3.56882,
+          "p99_ms": 3.56882,
+          "max_ms": 3.56882
+        },
+        "session_duration": {
+          "count": 1,
+          "total_ms": 10082.282273,
+          "min_ms": 10082.282273,
+          "p50_ms": 10082.282273,
+          "p95_ms": 10082.282273,
+          "p99_ms": 10082.282273,
+          "max_ms": 10082.282273
+        },
+        "time_to_first_c2s_object": {
+          "count": 1,
+          "total_ms": 14.099383,
+          "min_ms": 14.099383,
+          "p50_ms": 14.099383,
+          "p95_ms": 14.099383,
+          "p99_ms": 14.099383,
+          "max_ms": 14.099383
+        },
+        "time_to_first_s2c_object": {
+          "count": 1,
+          "total_ms": 29.486457,
+          "min_ms": 29.486457,
+          "p50_ms": 29.486457,
+          "p95_ms": 29.486457,
+          "p99_ms": 29.486457,
+          "max_ms": 29.486457
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000814,
+              "min_ms": 0.000814,
+              "p50_ms": 0.000814,
+              "p95_ms": 0.000814,
+              "p99_ms": 0.000814,
+              "max_ms": 0.000814
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "ack-c2s",
+            "result": "success",
+            "count": 13,
+            "duration": {
+              "count": 13,
+              "total_ms": 0.028639,
+              "min_ms": 0.000844,
+              "p50_ms": 0.002166,
+              "p95_ms": 0.003964,
+              "p99_ms": 0.004683,
+              "max_ms": 0.004683
+            },
+            "request_bytes": 0,
+            "response_bytes": 3614
+          },
+          {
+            "operation": "get",
+            "key_class": "ack-s2c",
+            "result": "success",
+            "count": 13,
+            "duration": {
+              "count": 13,
+              "total_ms": 0.032158,
+              "min_ms": 0.001413,
+              "p50_ms": 0.002437,
+              "p95_ms": 0.003486,
+              "p99_ms": 0.004131,
+              "max_ms": 0.004131
+            },
+            "request_bytes": 0,
+            "response_bytes": 3614
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 2480,
+            "duration": {
+              "count": 2480,
+              "total_ms": 3.602169,
+              "min_ms": 0.000316,
+              "p50_ms": 0.001205,
+              "p95_ms": 0.003184,
+              "p99_ms": 0.00631,
+              "max_ms": 0.030198
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 224,
+            "duration": {
+              "count": 224,
+              "total_ms": 0.552156,
+              "min_ms": 0.000784,
+              "p50_ms": 0.00195,
+              "p95_ms": 0.00402,
+              "p99_ms": 0.013887,
+              "max_ms": 0.032284
+            },
+            "request_bytes": 0,
+            "response_bytes": 31360
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 2556,
+            "duration": {
+              "count": 2556,
+              "total_ms": 3.584692,
+              "min_ms": 0.000348,
+              "p50_ms": 0.001199,
+              "p95_ms": 0.003078,
+              "p99_ms": 0.005418,
+              "max_ms": 0.026006
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 224,
+            "duration": {
+              "count": 224,
+              "total_ms": 0.541741,
+              "min_ms": 0.000737,
+              "p50_ms": 0.00187,
+              "p95_ms": 0.004088,
+              "p99_ms": 0.014841,
+              "max_ms": 0.027016
+            },
+            "request_bytes": 0,
+            "response_bytes": 31360
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000776,
+              "min_ms": 0.000776,
+              "p50_ms": 0.000776,
+              "p95_ms": 0.000776,
+              "p99_ms": 0.000776,
+              "max_ms": 0.000776
+            },
+            "request_bytes": 0,
+            "response_bytes": 354
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.002062,
+              "min_ms": 0.0005,
+              "p50_ms": 0.001562,
+              "p95_ms": 0.001562,
+              "p99_ms": 0.001562,
+              "max_ms": 0.001562
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001837,
+              "min_ms": 0.001837,
+              "p50_ms": 0.001837,
+              "p95_ms": 0.001837,
+              "p99_ms": 0.001837,
+              "max_ms": 0.001837
+            },
+            "request_bytes": 0,
+            "response_bytes": 298
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 461,
+            "duration": {
+              "count": 461,
+              "total_ms": 0.383051,
+              "min_ms": 0.000484,
+              "p50_ms": 0.000642,
+              "p95_ms": 0.001137,
+              "p99_ms": 0.002351,
+              "max_ms": 0.025087
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000995,
+              "min_ms": 0.000995,
+              "p50_ms": 0.000995,
+              "p95_ms": 0.000995,
+              "p99_ms": 0.000995,
+              "max_ms": 0.000995
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 565,
+            "duration": {
+              "count": 565,
+              "total_ms": 0.408175,
+              "min_ms": 0.000408,
+              "p50_ms": 0.000634,
+              "p95_ms": 0.001138,
+              "p99_ms": 0.001683,
+              "max_ms": 0.006231
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000663,
+              "min_ms": 0.000663,
+              "p50_ms": 0.000663,
+              "p95_ms": 0.000663,
+              "p99_ms": 0.000663,
+              "max_ms": 0.000663
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 494,
+            "duration": {
+              "count": 494,
+              "total_ms": 8.911368,
+              "min_ms": 0.001018,
+              "p50_ms": 0.01712,
+              "p95_ms": 0.037443,
+              "p99_ms": 0.049558,
+              "max_ms": 0.086051
+            },
+            "request_bytes": 0,
+            "response_bytes": 70
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-c2s",
+            "result": "success",
+            "count": 28,
+            "duration": {
+              "count": 28,
+              "total_ms": 0.048969,
+              "min_ms": 0.001137,
+              "p50_ms": 0.001519,
+              "p95_ms": 0.003094,
+              "p99_ms": 0.003193,
+              "max_ms": 0.003193
+            },
+            "request_bytes": 7784,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-s2c",
+            "result": "success",
+            "count": 28,
+            "duration": {
+              "count": 28,
+              "total_ms": 0.06561,
+              "min_ms": 0.001076,
+              "p50_ms": 0.001347,
+              "p95_ms": 0.003638,
+              "p99_ms": 0.022692,
+              "max_ms": 0.022692
+            },
+            "request_bytes": 7784,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.002688,
+              "min_ms": 0.002688,
+              "p50_ms": 0.002688,
+              "p95_ms": 0.002688,
+              "p99_ms": 0.002688,
+              "max_ms": 0.002688
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.002925,
+              "min_ms": 0.002925,
+              "p50_ms": 0.002925,
+              "p95_ms": 0.002925,
+              "p99_ms": 0.002925,
+              "max_ms": 0.002925
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 224,
+            "duration": {
+              "count": 224,
+              "total_ms": 0.597028,
+              "min_ms": 0.000882,
+              "p50_ms": 0.001743,
+              "p95_ms": 0.005775,
+              "p99_ms": 0.018837,
+              "max_ms": 0.030817
+            },
+            "request_bytes": 31360,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 224,
+            "duration": {
+              "count": 224,
+              "total_ms": 0.561696,
+              "min_ms": 0.0009,
+              "p50_ms": 0.001739,
+              "p95_ms": 0.005341,
+              "p99_ms": 0.016369,
+              "max_ms": 0.027344
+            },
+            "request_bytes": 31360,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001502,
+              "min_ms": 0.001502,
+              "p50_ms": 0.001502,
+              "p95_ms": 0.001502,
+              "p99_ms": 0.001502,
+              "max_ms": 0.001502
+            },
+            "request_bytes": 354,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000966,
+              "min_ms": 0.000966,
+              "p50_ms": 0.000966,
+              "p95_ms": 0.000966,
+              "p99_ms": 0.000966,
+              "max_ms": 0.000966
+            },
+            "request_bytes": 298,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 7545,
+        "s3_operations_per_session": 7545,
+        "s3_operations_per_mib": 353192.22857142857,
+        "get_misses_per_received_data_object": 11.241071428571429,
+        "head_operations_per_session": 1028,
+        "list_operations_per_opened_session": 494,
+        "ack_get_per_data_put": 0.05803571428571429,
+        "ack_put_per_received_data_object": 0.125,
+        "sealed_plaintext_size_ratio": 1.4
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "bulk-one-mib",
+      "description": "Send and echo one contiguous MiB, verifying SHA-256 and exact byte count.",
+      "status": "passed",
+      "parameters": {
+        "bytes": 1048576
+      },
+      "duration_ms": 73,
+      "traffic": {
+        "bytes_sent": 1048576,
+        "bytes_received": 1048576,
+        "expected_bytes": 1048576,
+        "sha256": "631b84027d6b9e52b539c4e8373622d23032dfadc64d60af87339c9037e4f769",
+        "connections": 1,
+        "requests": 1,
+        "throughput_bytes_per_sec": 216891937
+      },
+      "session_metrics": {
+        "sessions_started": 1,
+        "sessions_opened": 1,
+        "sessions_rejected": 0,
+        "sessions_completed": 1,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 32,
+        "chunks_received": 32,
+        "plaintext_bytes_sent": 2097152,
+        "plaintext_bytes_received": 2097152,
+        "sealed_bytes_sent": 2098432,
+        "sealed_bytes_received": 2098432,
+        "socket_reads_total": 38,
+        "aggregation_flush_size": 32,
+        "aggregation_flush_deadline": 0,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 1,
+          "total_ms": 3.580222,
+          "min_ms": 3.580222,
+          "p50_ms": 3.580222,
+          "p95_ms": 3.580222,
+          "p99_ms": 3.580222,
+          "max_ms": 3.580222
+        },
+        "session_duration": {
+          "count": 1,
+          "total_ms": 63.433207,
+          "min_ms": 63.433207,
+          "p50_ms": 63.433207,
+          "p95_ms": 63.433207,
+          "p99_ms": 63.433207,
+          "max_ms": 63.433207
+        },
+        "time_to_first_c2s_object": {
+          "count": 1,
+          "total_ms": 5.366746,
+          "min_ms": 5.366746,
+          "p50_ms": 5.366746,
+          "p95_ms": 5.366746,
+          "p99_ms": 5.366746,
+          "max_ms": 5.366746
+        },
+        "time_to_first_s2c_object": {
+          "count": 1,
+          "total_ms": 6.257416,
+          "min_ms": 6.257416,
+          "p50_ms": 6.257416,
+          "p95_ms": 6.257416,
+          "p99_ms": 6.257416,
+          "max_ms": 6.257416
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000822,
+              "min_ms": 0.000822,
+              "p50_ms": 0.000822,
+              "p95_ms": 0.000822,
+              "p99_ms": 0.000822,
+              "max_ms": 0.000822
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 25,
+            "duration": {
+              "count": 25,
+              "total_ms": 0.033201,
+              "min_ms": 0.000428,
+              "p50_ms": 0.000846,
+              "p95_ms": 0.003186,
+              "p99_ms": 0.009326,
+              "max_ms": 0.009326
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 16,
+            "duration": {
+              "count": 16,
+              "total_ms": 0.544111,
+              "min_ms": 0.005435,
+              "p50_ms": 0.008603,
+              "p95_ms": 0.126067,
+              "p99_ms": 0.170481,
+              "max_ms": 0.170481
+            },
+            "request_bytes": 0,
+            "response_bytes": 1049216
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 27,
+            "duration": {
+              "count": 27,
+              "total_ms": 0.027081,
+              "min_ms": 0.000396,
+              "p50_ms": 0.001143,
+              "p95_ms": 0.001514,
+              "p99_ms": 0.00156,
+              "max_ms": 0.00156
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 16,
+            "duration": {
+              "count": 16,
+              "total_ms": 0.459277,
+              "min_ms": 0.004076,
+              "p50_ms": 0.009056,
+              "p95_ms": 0.102686,
+              "p99_ms": 0.116257,
+              "max_ms": 0.116257
+            },
+            "request_bytes": 0,
+            "response_bytes": 1049216
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000771,
+              "min_ms": 0.000771,
+              "p50_ms": 0.000771,
+              "p95_ms": 0.000771,
+              "p99_ms": 0.000771,
+              "max_ms": 0.000771
+            },
+            "request_bytes": 0,
+            "response_bytes": 354
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.002071,
+              "min_ms": 0.000533,
+              "p50_ms": 0.001538,
+              "p95_ms": 0.001538,
+              "p99_ms": 0.001538,
+              "max_ms": 0.001538
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.002496,
+              "min_ms": 0.002496,
+              "p50_ms": 0.002496,
+              "p95_ms": 0.002496,
+              "p99_ms": 0.002496,
+              "max_ms": 0.002496
+            },
+            "request_bytes": 0,
+            "response_bytes": 298
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 3,
+            "duration": {
+              "count": 3,
+              "total_ms": 0.001816,
+              "min_ms": 0.000528,
+              "p50_ms": 0.000637,
+              "p95_ms": 0.000651,
+              "p99_ms": 0.000651,
+              "max_ms": 0.000651
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000951,
+              "min_ms": 0.000951,
+              "p50_ms": 0.000951,
+              "p95_ms": 0.000951,
+              "p99_ms": 0.000951,
+              "max_ms": 0.000951
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 4,
+            "duration": {
+              "count": 4,
+              "total_ms": 0.002369,
+              "min_ms": 0.000499,
+              "p50_ms": 0.000551,
+              "p95_ms": 0.000788,
+              "p99_ms": 0.000788,
+              "max_ms": 0.000788
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.000645,
+              "min_ms": 0.000645,
+              "p50_ms": 0.000645,
+              "p95_ms": 0.000645,
+              "p99_ms": 0.000645,
+              "max_ms": 0.000645
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 8,
+            "duration": {
+              "count": 8,
+              "total_ms": 0.030005,
+              "min_ms": 0.001693,
+              "p50_ms": 0.002625,
+              "p95_ms": 0.008255,
+              "p99_ms": 0.008255,
+              "max_ms": 0.008255
+            },
+            "request_bytes": 0,
+            "response_bytes": 63
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-c2s",
+            "result": "success",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.002409,
+              "min_ms": 0.00116,
+              "p50_ms": 0.001249,
+              "p95_ms": 0.001249,
+              "p99_ms": 0.001249,
+              "max_ms": 0.001249
+            },
+            "request_bytes": 556,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-s2c",
+            "result": "success",
+            "count": 2,
+            "duration": {
+              "count": 2,
+              "total_ms": 0.002255,
+              "min_ms": 0.001048,
+              "p50_ms": 0.001207,
+              "p95_ms": 0.001207,
+              "p99_ms": 0.001207,
+              "max_ms": 0.001207
+            },
+            "request_bytes": 556,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001214,
+              "min_ms": 0.001214,
+              "p50_ms": 0.001214,
+              "p95_ms": 0.001214,
+              "p99_ms": 0.001214,
+              "max_ms": 0.001214
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001326,
+              "min_ms": 0.001326,
+              "p50_ms": 0.001326,
+              "p95_ms": 0.001326,
+              "p99_ms": 0.001326,
+              "max_ms": 0.001326
+            },
+            "request_bytes": 258,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 16,
+            "duration": {
+              "count": 16,
+              "total_ms": 0.388322,
+              "min_ms": 0.004415,
+              "p50_ms": 0.006916,
+              "p95_ms": 0.117784,
+              "p99_ms": 0.13605,
+              "max_ms": 0.13605
+            },
+            "request_bytes": 1049216,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 16,
+            "duration": {
+              "count": 16,
+              "total_ms": 0.430804,
+              "min_ms": 0.003864,
+              "p50_ms": 0.006676,
+              "p95_ms": 0.118041,
+              "p99_ms": 0.146,
+              "max_ms": 0.146
+            },
+            "request_bytes": 1049216,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.001712,
+              "min_ms": 0.001712,
+              "p50_ms": 0.001712,
+              "p95_ms": 0.001712,
+              "p99_ms": 0.001712,
+              "max_ms": 0.001712
+            },
+            "request_bytes": 354,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 1,
+            "duration": {
+              "count": 1,
+              "total_ms": 0.00155,
+              "min_ms": 0.00155,
+              "p50_ms": 0.00155,
+              "p95_ms": 0.00155,
+              "p99_ms": 0.00155,
+              "max_ms": 0.00155
+            },
+            "request_bytes": 298,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 146,
+        "s3_operations_per_session": 146,
+        "s3_operations_per_mib": 146,
+        "get_misses_per_received_data_object": 1.625,
+        "head_operations_per_session": 9,
+        "list_operations_per_opened_session": 8,
+        "ack_get_per_data_put": 0,
+        "ack_put_per_received_data_object": 0.125,
+        "sealed_plaintext_size_ratio": 1.0006103515625
+      },
+      "observations": [
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "short-connections",
+      "description": "Open sequential short SOCKS connections and exchange a small request/response on each.",
+      "status": "passed",
+      "parameters": {
+        "connections": 20
+      },
+      "duration_ms": 916,
+      "traffic": {
+        "bytes_sent": 160,
+        "bytes_received": 160,
+        "expected_bytes": 160,
+        "connections": 20,
+        "requests": 20
+      },
+      "session_metrics": {
+        "sessions_started": 20,
+        "sessions_opened": 20,
+        "sessions_rejected": 0,
+        "sessions_completed": 20,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 40,
+        "chunks_received": 40,
+        "plaintext_bytes_sent": 320,
+        "plaintext_bytes_received": 320,
+        "sealed_bytes_sent": 1920,
+        "sealed_bytes_received": 1920,
+        "socket_reads_total": 80,
+        "aggregation_flush_size": 0,
+        "aggregation_flush_deadline": 40,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 20,
+          "total_ms": 206.550281,
+          "min_ms": 3.553752,
+          "p50_ms": 8.293,
+          "p95_ms": 31.891544,
+          "p99_ms": 32.660951,
+          "max_ms": 32.660951
+        },
+        "session_duration": {
+          "count": 20,
+          "total_ms": 1933.809525,
+          "min_ms": 84.441349,
+          "p50_ms": 90.211014,
+          "p95_ms": 129.789514,
+          "p99_ms": 130.208873,
+          "max_ms": 130.208873
+        },
+        "time_to_first_c2s_object": {
+          "count": 20,
+          "total_ms": 417.38414,
+          "min_ms": 13.705629,
+          "p50_ms": 18.559841,
+          "p95_ms": 42.934216,
+          "p99_ms": 43.731082,
+          "max_ms": 43.731082
+        },
+        "time_to_first_s2c_object": {
+          "count": 20,
+          "total_ms": 736.168116,
+          "min_ms": 28.880217,
+          "p50_ms": 31.557944,
+          "p95_ms": 60.456315,
+          "p99_ms": 63.250004,
+          "max_ms": 63.250004
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.020722,
+              "min_ms": 0.000808,
+              "p50_ms": 0.000938,
+              "p95_ms": 0.001409,
+              "p99_ms": 0.001489,
+              "max_ms": 0.001489
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 324,
+            "duration": {
+              "count": 324,
+              "total_ms": 0.459066,
+              "min_ms": 0.000353,
+              "p50_ms": 0.001184,
+              "p95_ms": 0.002507,
+              "p99_ms": 0.01123,
+              "max_ms": 0.017129
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.051317,
+              "min_ms": 0.000542,
+              "p50_ms": 0.001504,
+              "p95_ms": 0.003519,
+              "p99_ms": 0.020613,
+              "max_ms": 0.020613
+            },
+            "request_bytes": 0,
+            "response_bytes": 960
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 346,
+            "duration": {
+              "count": 346,
+              "total_ms": 0.409486,
+              "min_ms": 0.000317,
+              "p50_ms": 0.001146,
+              "p95_ms": 0.001881,
+              "p99_ms": 0.003716,
+              "max_ms": 0.021997
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.02943,
+              "min_ms": 0.000669,
+              "p50_ms": 0.001347,
+              "p95_ms": 0.002197,
+              "p99_ms": 0.003809,
+              "max_ms": 0.003809
+            },
+            "request_bytes": 0,
+            "response_bytes": 960
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.02449,
+              "min_ms": 0.00063,
+              "p50_ms": 0.000936,
+              "p95_ms": 0.00235,
+              "p99_ms": 0.002677,
+              "max_ms": 0.002677
+            },
+            "request_bytes": 0,
+            "response_bytes": 7076
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 60,
+            "duration": {
+              "count": 60,
+              "total_ms": 0.083294,
+              "min_ms": 0.000417,
+              "p50_ms": 0.001533,
+              "p95_ms": 0.002397,
+              "p99_ms": 0.003224,
+              "max_ms": 0.005649
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.043547,
+              "min_ms": 0.000867,
+              "p50_ms": 0.002327,
+              "p95_ms": 0.003467,
+              "p99_ms": 0.003482,
+              "max_ms": 0.003482
+            },
+            "request_bytes": 0,
+            "response_bytes": 5956
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 60,
+            "duration": {
+              "count": 60,
+              "total_ms": 0.036767,
+              "min_ms": 0.000487,
+              "p50_ms": 0.000585,
+              "p95_ms": 0.000846,
+              "p99_ms": 0.000944,
+              "max_ms": 0.001003
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.015623,
+              "min_ms": 0.000606,
+              "p50_ms": 0.000742,
+              "p95_ms": 0.001051,
+              "p99_ms": 0.001055,
+              "max_ms": 0.001055
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 60,
+            "duration": {
+              "count": 60,
+              "total_ms": 0.038924,
+              "min_ms": 0.000465,
+              "p50_ms": 0.000599,
+              "p95_ms": 0.00098,
+              "p99_ms": 0.001069,
+              "max_ms": 0.001476
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.015447,
+              "min_ms": 0.000493,
+              "p50_ms": 0.000739,
+              "p95_ms": 0.001122,
+              "p99_ms": 0.001463,
+              "max_ms": 0.001463
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 113,
+            "duration": {
+              "count": 113,
+              "total_ms": 0.517641,
+              "min_ms": 0.00097,
+              "p50_ms": 0.003541,
+              "p95_ms": 0.009744,
+              "p99_ms": 0.023809,
+              "max_ms": 0.023985
+            },
+            "request_bytes": 0,
+            "response_bytes": 1360
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.031878,
+              "min_ms": 0.000915,
+              "p50_ms": 0.001314,
+              "p95_ms": 0.003183,
+              "p99_ms": 0.003233,
+              "max_ms": 0.003233
+            },
+            "request_bytes": 5152,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.034546,
+              "min_ms": 0.000959,
+              "p50_ms": 0.001295,
+              "p95_ms": 0.004661,
+              "p99_ms": 0.005729,
+              "max_ms": 0.005729
+            },
+            "request_bytes": 5152,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.034461,
+              "min_ms": 0.001146,
+              "p50_ms": 0.001421,
+              "p95_ms": 0.003009,
+              "p99_ms": 0.00383,
+              "max_ms": 0.00383
+            },
+            "request_bytes": 960,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.03129,
+              "min_ms": 0.000851,
+              "p50_ms": 0.001354,
+              "p95_ms": 0.002432,
+              "p99_ms": 0.003486,
+              "max_ms": 0.003486
+            },
+            "request_bytes": 960,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.025245,
+              "min_ms": 0.00103,
+              "p50_ms": 0.00121,
+              "p95_ms": 0.001592,
+              "p99_ms": 0.001946,
+              "max_ms": 0.001946
+            },
+            "request_bytes": 7076,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.026585,
+              "min_ms": 0.000976,
+              "p50_ms": 0.001267,
+              "p95_ms": 0.001722,
+              "p99_ms": 0.001967,
+              "max_ms": 0.001967
+            },
+            "request_bytes": 5956,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 1223,
+        "s3_operations_per_session": 61.15,
+        "s3_operations_per_mib": 8015052.8,
+        "get_misses_per_received_data_object": 16.75,
+        "head_operations_per_session": 8,
+        "list_operations_per_opened_session": 5.65,
+        "ack_get_per_data_put": 0,
+        "ack_put_per_received_data_object": 0,
+        "sealed_plaintext_size_ratio": 6
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "concurrent-idle-sessions",
+      "description": "Open idle SOCKS sessions for a bounded period and measure background polling.",
+      "status": "passed",
+      "parameters": {
+        "idle": "10s",
+        "sessions": 20
+      },
+      "duration_ms": 10250,
+      "traffic": {
+        "bytes_sent": 0,
+        "bytes_received": 0,
+        "expected_bytes": 0,
+        "connections": 20,
+        "requests": 0,
+        "idle_ms": 10000
+      },
+      "session_metrics": {
+        "sessions_started": 20,
+        "sessions_opened": 20,
+        "sessions_rejected": 0,
+        "sessions_completed": 20,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 0,
+        "chunks_received": 0,
+        "plaintext_bytes_sent": 0,
+        "plaintext_bytes_received": 0,
+        "sealed_bytes_sent": 0,
+        "sealed_bytes_received": 0,
+        "socket_reads_total": 0,
+        "aggregation_flush_size": 0,
+        "aggregation_flush_deadline": 0,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 20,
+          "total_ms": 77.937908,
+          "min_ms": 3.349737,
+          "p50_ms": 3.701626,
+          "p95_ms": 3.95899,
+          "p99_ms": 8.208905,
+          "max_ms": 8.208905
+        },
+        "session_duration": {
+          "count": 20,
+          "total_ms": 203270.06196,
+          "min_ms": 10089.733632,
+          "p50_ms": 10170.869155,
+          "p95_ms": 10177.008624,
+          "p99_ms": 10177.447122,
+          "max_ms": 10177.447122
+        },
+        "time_to_first_c2s_object": {
+          "count": 0,
+          "total_ms": 0,
+          "min_ms": 0,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 0,
+          "max_ms": 0
+        },
+        "time_to_first_s2c_object": {
+          "count": 0,
+          "total_ms": 0,
+          "min_ms": 0,
+          "p50_ms": 0,
+          "p95_ms": 0,
+          "p99_ms": 0,
+          "max_ms": 0
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.018392,
+              "min_ms": 0.000756,
+              "p50_ms": 0.000855,
+              "p95_ms": 0.001276,
+              "p99_ms": 0.001468,
+              "max_ms": 0.001468
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 9840,
+            "duration": {
+              "count": 9840,
+              "total_ms": 9.503407,
+              "min_ms": 0.000339,
+              "p50_ms": 0.000529,
+              "p95_ms": 0.002429,
+              "p99_ms": 0.004456,
+              "max_ms": 0.326033
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 9912,
+            "duration": {
+              "count": 9912,
+              "total_ms": 9.039124,
+              "min_ms": 0.00035,
+              "p50_ms": 0.000532,
+              "p95_ms": 0.002367,
+              "p99_ms": 0.0042,
+              "max_ms": 0.048128
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.02194,
+              "min_ms": 0.00077,
+              "p50_ms": 0.000947,
+              "p95_ms": 0.001803,
+              "p99_ms": 0.001893,
+              "max_ms": 0.001893
+            },
+            "request_bytes": 0,
+            "response_bytes": 7068
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 41,
+            "duration": {
+              "count": 41,
+              "total_ms": 0.047566,
+              "min_ms": 0.000422,
+              "p50_ms": 0.000685,
+              "p95_ms": 0.002091,
+              "p99_ms": 0.004393,
+              "max_ms": 0.004393
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.025542,
+              "min_ms": 0.000735,
+              "p50_ms": 0.000953,
+              "p95_ms": 0.002955,
+              "p99_ms": 0.003644,
+              "max_ms": 0.003644
+            },
+            "request_bytes": 0,
+            "response_bytes": 5960
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 2440,
+            "duration": {
+              "count": 2440,
+              "total_ms": 1.411861,
+              "min_ms": 0.000262,
+              "p50_ms": 0.000509,
+              "p95_ms": 0.000899,
+              "p99_ms": 0.001732,
+              "max_ms": 0.019784
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.011913,
+              "min_ms": 0.000398,
+              "p50_ms": 0.00058,
+              "p95_ms": 0.000867,
+              "p99_ms": 0.001016,
+              "max_ms": 0.001016
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 2458,
+            "duration": {
+              "count": 2458,
+              "total_ms": 1.361118,
+              "min_ms": 0.00026,
+              "p50_ms": 0.000516,
+              "p95_ms": 0.000907,
+              "p99_ms": 0.001276,
+              "max_ms": 0.020822
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.035425,
+              "min_ms": 0.000437,
+              "p50_ms": 0.000747,
+              "p95_ms": 0.001381,
+              "p99_ms": 0.020935,
+              "max_ms": 0.020935
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 536,
+            "duration": {
+              "count": 536,
+              "total_ms": 1.946666,
+              "min_ms": 0.000971,
+              "p50_ms": 0.003085,
+              "p95_ms": 0.006136,
+              "p99_ms": 0.012617,
+              "max_ms": 0.025894
+            },
+            "request_bytes": 0,
+            "response_bytes": 1500
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.060582,
+              "min_ms": 0.000721,
+              "p50_ms": 0.001363,
+              "p95_ms": 0.005806,
+              "p99_ms": 0.028652,
+              "max_ms": 0.028652
+            },
+            "request_bytes": 5152,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.04392,
+              "min_ms": 0.000995,
+              "p50_ms": 0.001263,
+              "p95_ms": 0.004689,
+              "p99_ms": 0.013115,
+              "max_ms": 0.013115
+            },
+            "request_bytes": 5152,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.072187,
+              "min_ms": 0.001001,
+              "p50_ms": 0.001218,
+              "p95_ms": 0.002462,
+              "p99_ms": 0.045409,
+              "max_ms": 0.045409
+            },
+            "request_bytes": 7068,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 20,
+            "duration": {
+              "count": 20,
+              "total_ms": 0.025307,
+              "min_ms": 0.000895,
+              "p50_ms": 0.001277,
+              "p95_ms": 0.00159,
+              "p99_ms": 0.001655,
+              "max_ms": 0.001655
+            },
+            "request_bytes": 5960,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 25407,
+        "s3_operations_per_session": 1270.35,
+        "s3_operations_per_mib": 0,
+        "get_misses_per_received_data_object": 19752,
+        "head_operations_per_session": 246.9,
+        "list_operations_per_opened_session": 26.8,
+        "ack_get_per_data_put": 0,
+        "ack_put_per_received_data_object": 0,
+        "sealed_plaintext_size_ratio": 0
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    },
+    {
+      "name": "mixed-traffic",
+      "description": "Run one bulk stream, small request/response streams, and idle streams at the same time.",
+      "status": "passed",
+      "parameters": {
+        "bulk_bytes": 262144,
+        "chatty_duration": "10s",
+        "chatty_interval": "5ms",
+        "chatty_streams": 3,
+        "idle_duration": "10s",
+        "idle_streams": 3
+      },
+      "duration_ms": 10138,
+      "traffic": {
+        "bytes_sent": 331244,
+        "bytes_received": 331244,
+        "expected_bytes": 331244,
+        "connections": 7,
+        "requests": 692
+      },
+      "session_metrics": {
+        "sessions_started": 7,
+        "sessions_opened": 7,
+        "sessions_rejected": 0,
+        "sessions_completed": 7,
+        "sessions_failed": 0,
+        "active_sessions": 0,
+        "chunks_sent": 1390,
+        "chunks_received": 1390,
+        "plaintext_bytes_sent": 662488,
+        "plaintext_bytes_received": 662488,
+        "sealed_bytes_sent": 718088,
+        "sealed_bytes_received": 718088,
+        "socket_reads_total": 2774,
+        "aggregation_flush_size": 8,
+        "aggregation_flush_deadline": 1382,
+        "aggregation_flush_eof": 0,
+        "aggregation_flush_error": 0,
+        "time_to_open_result": {
+          "count": 7,
+          "total_ms": 27.631118,
+          "min_ms": 3.811095,
+          "p50_ms": 3.966676,
+          "p95_ms": 4.042373,
+          "p99_ms": 4.042373,
+          "max_ms": 4.042373
+        },
+        "session_duration": {
+          "count": 7,
+          "total_ms": 60666.821317,
+          "min_ms": 64.115808,
+          "p50_ms": 10088.273174,
+          "p95_ms": 10129.832944,
+          "p99_ms": 10129.832944,
+          "max_ms": 10129.832944
+        },
+        "time_to_first_c2s_object": {
+          "count": 4,
+          "total_ms": 48.739501,
+          "min_ms": 4.949325,
+          "p50_ms": 14.600029,
+          "p95_ms": 14.604096,
+          "p99_ms": 14.604096,
+          "max_ms": 14.604096
+        },
+        "time_to_first_s2c_object": {
+          "count": 4,
+          "total_ms": 98.911882,
+          "min_ms": 6.994566,
+          "p50_ms": 30.645709,
+          "p95_ms": 30.650148,
+          "p99_ms": 30.650148,
+          "max_ms": 30.650148
+        }
+      },
+      "objectstore_metrics": {
+        "operations": [
+          {
+            "operation": "delete",
+            "key_class": "open",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.00763,
+              "min_ms": 0.000866,
+              "p50_ms": 0.001144,
+              "p95_ms": 0.001297,
+              "p99_ms": 0.001297,
+              "max_ms": 0.001297
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "ack-c2s",
+            "result": "success",
+            "count": 42,
+            "duration": {
+              "count": 42,
+              "total_ms": 0.091183,
+              "min_ms": 0.000736,
+              "p50_ms": 0.001833,
+              "p95_ms": 0.003869,
+              "p99_ms": 0.008642,
+              "max_ms": 0.008642
+            },
+            "request_bytes": 0,
+            "response_bytes": 11676
+          },
+          {
+            "operation": "get",
+            "key_class": "ack-s2c",
+            "result": "success",
+            "count": 42,
+            "duration": {
+              "count": 42,
+              "total_ms": 0.092088,
+              "min_ms": 0.000992,
+              "p50_ms": 0.001895,
+              "p95_ms": 0.004111,
+              "p99_ms": 0.005116,
+              "max_ms": 0.005116
+            },
+            "request_bytes": 0,
+            "response_bytes": 11676
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "not_found",
+            "count": 9093,
+            "duration": {
+              "count": 9093,
+              "total_ms": 11.941898,
+              "min_ms": 0.000288,
+              "p50_ms": 0.001112,
+              "p95_ms": 0.001983,
+              "p99_ms": 0.004716,
+              "max_ms": 0.19317
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 695,
+            "duration": {
+              "count": 695,
+              "total_ms": 1.630447,
+              "min_ms": 0.000501,
+              "p50_ms": 0.001689,
+              "p95_ms": 0.003653,
+              "p99_ms": 0.017657,
+              "max_ms": 0.116088
+            },
+            "request_bytes": 0,
+            "response_bytes": 359044
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "not_found",
+            "count": 9148,
+            "duration": {
+              "count": 9148,
+              "total_ms": 11.028513,
+              "min_ms": 0.00028,
+              "p50_ms": 0.001035,
+              "p95_ms": 0.00197,
+              "p99_ms": 0.003971,
+              "max_ms": 0.087461
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 695,
+            "duration": {
+              "count": 695,
+              "total_ms": 1.610887,
+              "min_ms": 0.000566,
+              "p50_ms": 0.001635,
+              "p95_ms": 0.003406,
+              "p99_ms": 0.022986,
+              "max_ms": 0.093173
+            },
+            "request_bytes": 0,
+            "response_bytes": 359044
+          },
+          {
+            "operation": "get",
+            "key_class": "open",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.010935,
+              "min_ms": 0.001012,
+              "p50_ms": 0.001588,
+              "p95_ms": 0.001967,
+              "p99_ms": 0.001967,
+              "max_ms": 0.001967
+            },
+            "request_bytes": 0,
+            "response_bytes": 2478
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "not_found",
+            "count": 14,
+            "duration": {
+              "count": 14,
+              "total_ms": 0.019569,
+              "min_ms": 0.000409,
+              "p50_ms": 0.000703,
+              "p95_ms": 0.001912,
+              "p99_ms": 0.009772,
+              "max_ms": 0.009772
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "get",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.013492,
+              "min_ms": 0.000891,
+              "p50_ms": 0.001593,
+              "p95_ms": 0.003271,
+              "p99_ms": 0.003271,
+              "max_ms": 0.003271
+            },
+            "request_bytes": 0,
+            "response_bytes": 2086
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "not_found",
+            "count": 1770,
+            "duration": {
+              "count": 1770,
+              "total_ms": 1.407297,
+              "min_ms": 0.000273,
+              "p50_ms": 0.000639,
+              "p95_ms": 0.001105,
+              "p99_ms": 0.001668,
+              "max_ms": 0.157764
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.005254,
+              "min_ms": 0.000579,
+              "p50_ms": 0.000765,
+              "p95_ms": 0.000947,
+              "p99_ms": 0.000947,
+              "max_ms": 0.000947
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "not_found",
+            "count": 1942,
+            "duration": {
+              "count": 1942,
+              "total_ms": 1.413128,
+              "min_ms": 0.000269,
+              "p50_ms": 0.000622,
+              "p95_ms": 0.001091,
+              "p99_ms": 0.00183,
+              "max_ms": 0.038632
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "head",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.006902,
+              "min_ms": 0.000613,
+              "p50_ms": 0.000872,
+              "p95_ms": 0.001737,
+              "p99_ms": 0.001737,
+              "max_ms": 0.001737
+            },
+            "request_bytes": 0,
+            "response_bytes": 0
+          },
+          {
+            "operation": "list",
+            "key_class": "list-open",
+            "result": "success",
+            "count": 496,
+            "duration": {
+              "count": 496,
+              "total_ms": 21.818045,
+              "min_ms": 0.001698,
+              "p50_ms": 0.041292,
+              "p95_ms": 0.081783,
+              "p99_ms": 0.117119,
+              "max_ms": 0.312657
+            },
+            "request_bytes": 0,
+            "response_bytes": 448
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-c2s",
+            "result": "success",
+            "count": 85,
+            "duration": {
+              "count": 85,
+              "total_ms": 0.170136,
+              "min_ms": 0.000614,
+              "p50_ms": 0.001419,
+              "p95_ms": 0.003301,
+              "p99_ms": 0.005553,
+              "max_ms": 0.031604
+            },
+            "request_bytes": 23630,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "ack-s2c",
+            "result": "success",
+            "count": 85,
+            "duration": {
+              "count": 85,
+              "total_ms": 0.265451,
+              "min_ms": 0.000872,
+              "p50_ms": 0.0014,
+              "p95_ms": 0.005994,
+              "p99_ms": 0.035786,
+              "max_ms": 0.0681
+            },
+            "request_bytes": 23630,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-client",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.0113,
+              "min_ms": 0.000665,
+              "p50_ms": 0.001464,
+              "p95_ms": 0.003521,
+              "p99_ms": 0.003521,
+              "max_ms": 0.003521
+            },
+            "request_bytes": 1802,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "close-server",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.011621,
+              "min_ms": 0.001065,
+              "p50_ms": 0.001411,
+              "p95_ms": 0.003391,
+              "p99_ms": 0.003391,
+              "max_ms": 0.003391
+            },
+            "request_bytes": 1802,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-c2s",
+            "result": "success",
+            "count": 695,
+            "duration": {
+              "count": 695,
+              "total_ms": 1.719029,
+              "min_ms": 0.000526,
+              "p50_ms": 0.001516,
+              "p95_ms": 0.00375,
+              "p99_ms": 0.03244,
+              "max_ms": 0.101826
+            },
+            "request_bytes": 359044,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "data-s2c",
+            "result": "success",
+            "count": 695,
+            "duration": {
+              "count": 695,
+              "total_ms": 2.17149,
+              "min_ms": 0.000541,
+              "p50_ms": 0.00153,
+              "p95_ms": 0.004583,
+              "p99_ms": 0.060101,
+              "max_ms": 0.142428
+            },
+            "request_bytes": 359044,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.012132,
+              "min_ms": 0.001047,
+              "p50_ms": 0.001724,
+              "p95_ms": 0.002782,
+              "p99_ms": 0.002782,
+              "max_ms": 0.002782
+            },
+            "request_bytes": 2478,
+            "response_bytes": 0
+          },
+          {
+            "operation": "put",
+            "key_class": "open-result",
+            "result": "success",
+            "count": 7,
+            "duration": {
+              "count": 7,
+              "total_ms": 0.011451,
+              "min_ms": 0.000848,
+              "p50_ms": 0.001531,
+              "p95_ms": 0.0035,
+              "p99_ms": 0.0035,
+              "max_ms": 0.0035
+            },
+            "request_bytes": 2086,
+            "response_bytes": 0
+          }
+        ]
+      },
+      "derived_metrics": {
+        "total_objectstore_ops": 25560,
+        "s3_operations_per_session": 3651.4285714285716,
+        "s3_operations_per_mib": 80911.96386953424,
+        "get_misses_per_received_data_object": 13.123021582733813,
+        "head_operations_per_session": 532.2857142857143,
+        "list_operations_per_opened_session": 70.85714285714286,
+        "ack_get_per_data_put": 0.060431654676258995,
+        "ack_put_per_received_data_object": 0.1223021582733813,
+        "sealed_plaintext_size_ratio": 1.0839260484718214
+      },
+      "observations": [
+        "GET not_found polling misses are at least half of observed object-store operations.",
+        "HEAD close-marker checks are visible in the request mix.",
+        "LIST open-session polling is part of baseline request volume."
+      ]
+    }
+  ]
+}

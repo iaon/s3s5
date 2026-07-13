@@ -62,8 +62,13 @@ func (s *Store) HeadObject(ctx context.Context, key string) (objectstore.ObjectI
 }
 
 func (s *Store) ListPrefix(ctx context.Context, prefix string, opts objectstore.ListOptions) ([]string, error) {
+	page, err := s.ListPrefixPage(ctx, prefix, opts)
+	return page.Keys, err
+}
+
+func (s *Store) ListPrefixPage(ctx context.Context, prefix string, opts objectstore.ListOptions) (objectstore.ListPage, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return objectstore.ListPage{}, err
 	}
 	s.mu.RLock()
 	keys := make([]string, 0)
@@ -74,10 +79,24 @@ func (s *Store) ListPrefix(ctx context.Context, prefix string, opts objectstore.
 	}
 	s.mu.RUnlock()
 	sort.Strings(keys)
-	if opts.MaxKeys > 0 && len(keys) > opts.MaxKeys {
-		keys = keys[:opts.MaxKeys]
+	start := 0
+	if opts.ContinuationToken != "" {
+		start = sort.SearchStrings(keys, opts.ContinuationToken)
+		if start < len(keys) && keys[start] == opts.ContinuationToken {
+			start++
+		}
 	}
-	return keys, nil
+	if start > len(keys) {
+		start = len(keys)
+	}
+	keys = keys[start:]
+	page := objectstore.ListPage{Keys: append([]string(nil), keys...)}
+	if opts.MaxKeys > 0 && len(keys) > opts.MaxKeys {
+		page.Keys = append([]string(nil), keys[:opts.MaxKeys]...)
+		page.IsTruncated = true
+		page.NextContinuationToken = page.Keys[len(page.Keys)-1]
+	}
+	return page, nil
 }
 
 func (s *Store) DeleteObject(ctx context.Context, key string) error {

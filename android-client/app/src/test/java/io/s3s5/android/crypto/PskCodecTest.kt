@@ -38,6 +38,16 @@ class PskCodecTest {
         assertArrayEquals(plaintext, codec.open("data", session, "c2s", 3, sealed))
     }
 
+    @Test
+    fun binaryDataEnvelopeRoundTrip() {
+        val codec = PskCodec("test-pre-shared-key")
+        val plaintext = ByteArray(65536) { (it % 251).toByte() }
+        val sealed = codec.sealData(session, "c2s", 3, plaintext)
+        assertEquals('S'.code.toByte(), sealed[0])
+        assertEquals('5'.code.toByte(), sealed[1])
+        assertArrayEquals(plaintext, codec.openData(session, "c2s", 3, sealed))
+    }
+
     @Test(expected = GeneralSecurityException::class)
     fun wrongAadFails() {
         val codec = PskCodec("test-pre-shared-key")

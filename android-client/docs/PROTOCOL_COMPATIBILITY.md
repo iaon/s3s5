@@ -28,9 +28,9 @@ are decimal strings padded to 20 digits.
 
 Control JSON field names match Go struct tags:
 
-- `OpenRequest`: `version`, `session_id`, `target`, `created_at`
+- `OpenRequest`: `version`, `session_id`, `target`, `max_receive_chunk_size`, `created_at`
 - `Target`: `type`, `host`, `port`
-- `OpenResult`: `version`, `session_id`, `accepted`, `error`, `created_at`
+- `OpenResult`: `version`, `session_id`, `accepted`, `error`, `max_receive_chunk_size`, `created_at`
 - `Ack`: `version`, `session_id`, `direction`, `next_seq`, `updated_at`
 - `Close`: `version`, `session_id`, `side`, `reason`, `created_at`
 
@@ -46,7 +46,8 @@ PSK crypto matches the Go `PSKCodec`:
 - info: `payload/<direction>`
 - output key length: 32 bytes
 - cipher: AES-256-GCM with 12-byte nonce
-- envelope JSON: `v`, `alg`, `nonce`, `ciphertext`
+- control envelope JSON: `v`, `alg`, `nonce`, `ciphertext`
+- data envelope: binary `S5D1` header, version, algorithm, nonce length, ciphertext length, nonce, ciphertext plus GCM tag
 - `alg`: `AES-256-GCM`
 
 AAD format is:
@@ -64,7 +65,7 @@ The Android client opens sessions in the same order as the Go client:
 
 1. Write encrypted `open`.
 2. Poll encrypted `open-result`.
-3. Reply SOCKS success only when accepted.
+3. Validate `open-result.max_receive_chunk_size` and reply SOCKS success only when accepted.
 4. Stream client bytes to `data/c2s`.
 5. Stream server bytes from `data/s2c`.
 
@@ -76,6 +77,9 @@ Defaults match Go:
 - window: 16 chunks
 - idle timeout: 2 minutes
 - ACK interval: `1` when window is <= 2, otherwise `window / 2`
+- flush delay: 10 ms
 
-The receive path checks peer close markers every fourth miss and writes a final
-ACK when needed before returning.
+P1 is wire-incompatible with older clients and servers even though key layout
+still uses `v1`. Directional receive chunk limits are mandatory. The receive
+path checks peer close markers after the configured number of consecutive data
+misses and does not write a final ACK after peer close.

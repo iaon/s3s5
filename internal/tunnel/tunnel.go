@@ -27,15 +27,18 @@ const (
 )
 
 type Config struct {
-	Store        objectstore.ObjectStore
-	Codec        s3crypto.Codec
-	Stats        *Stats
-	Prefix       string
-	ChunkSize    int
-	PollMin      time.Duration
-	PollMax      time.Duration
-	WindowChunks uint64
-	IdleTimeout  time.Duration
+	Store                 objectstore.ObjectStore
+	Codec                 s3crypto.Codec
+	Stats                 *Stats
+	Prefix                string
+	ChunkSize             int
+	FlushDelay            time.Duration
+	PollMin               time.Duration
+	PollMax               time.Duration
+	ActivePollDuration    time.Duration
+	WindowChunks          uint64
+	CloseCheckAfterMisses int
+	IdleTimeout           time.Duration
 }
 
 type Client struct {
@@ -49,8 +52,17 @@ type Server struct {
 	MaxSessions        int
 	MaxBytesPerSession int64
 
-	processed sync.Map
+	inFlight sync.Map
 }
+
+type SendWindow struct {
+	AckedNextSeq uint64
+}
+
+const (
+	defaultCloseCheckAfterMisses = 4
+	defaultActivePollDuration    = 500 * time.Millisecond
+)
 
 func NewClient(cfg Config) (*Client, error) {
 	cfg = withDefaults(cfg)
@@ -90,10 +102,11 @@ func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn n
 	}
 	c.cfg.Stats.startSession(sessionID, startedAt)
 	req := protocol.OpenRequest{
-		Version:   protocol.Version,
-		SessionID: sessionID,
-		Target:    target,
-		CreatedAt: time.Now().UTC(),
+		Version:             protocol.Version,
+		SessionID:           sessionID,
+		Target:              target,
+		MaxReceiveChunkSize: c.cfg.ChunkSize,
+		CreatedAt:           time.Now().UTC(),
 	}
 	if err := c.putJSON(ctx, protocol.OpenKey(c.cfg.Prefix, sessionID), "open", sessionID, "control", req); err != nil {
 		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
@@ -111,6 +124,14 @@ func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn n
 		_ = reply(socks5.ReplyHostUnreachable)
 		return fmt.Errorf("server rejected target: %s", result.Error)
 	}
+	c2sMax, err := protocol.EffectiveSendChunkSize(c.cfg.ChunkSize, result.MaxReceiveChunkSize)
+	if err != nil {
+		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
+		_ = reply(socks5.ReplyHostUnreachable)
+		return err
+	}
+	sessionCfg := c.cfg
+	sessionCfg.ChunkSize = c2sMax
 	c.cfg.Stats.openSession(time.Since(startedAt))
 	if err := reply(socks5.ReplySucceeded); err != nil {
 		c.cfg.Stats.finishSession(sessionID, time.Since(startedAt), err)
@@ -118,12 +139,13 @@ func (c *Client) HandleSOCKS(ctx context.Context, target protocol.Target, conn n
 	}
 	sessionCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
+	activity := newActivitySignal()
 	errCh := make(chan error, 2)
 	go func() {
-		errCh <- c.streamToStore(sessionCtx, sessionID, DirectionC2S, SideClient, conn, 0)
+		errCh <- streamToStore(sessionCtx, sessionCfg, sessionID, DirectionC2S, SideClient, conn, 0, activity)
 	}()
 	go func() {
-		err := c.streamFromStore(sessionCtx, sessionID, DirectionS2C, SideServer, conn, 0)
+		err := streamFromStore(sessionCtx, sessionCfg, sessionID, DirectionS2C, SideServer, conn, 0, activity)
 		closeWrite(conn)
 		errCh <- err
 	}()
@@ -147,8 +169,7 @@ func (s *Server) Run(ctx context.Context) error {
 			return ctx.Err()
 		default:
 		}
-		s.cfg.Stats.incList()
-		keys, err := s.cfg.Store.ListPrefix(ctx, protocol.OpenPrefix(s.cfg.Prefix), objectstore.ListOptions{MaxKeys: 1000})
+		keys, err := s.listOpenKeys(ctx)
 		if err != nil {
 			return err
 		}
@@ -158,13 +179,16 @@ func (s *Server) Run(ctx context.Context) error {
 			if sessionID == "" {
 				continue
 			}
-			if _, loaded := s.processed.LoadOrStore(sessionID, struct{}{}); loaded {
+			if _, loaded := s.inFlight.LoadOrStore(sessionID, struct{}{}); loaded {
 				continue
 			}
 			started++
 			sem <- struct{}{}
 			go func(id string) {
-				defer func() { <-sem }()
+				defer func() {
+					s.inFlight.Delete(id)
+					<-sem
+				}()
 				s.cfg.Stats.incActive()
 				defer s.cfg.Stats.decActive()
 				_ = s.handleSession(ctx, id)
@@ -181,13 +205,39 @@ func (s *Server) Run(ctx context.Context) error {
 	}
 }
 
+func (s *Server) listOpenKeys(ctx context.Context) ([]string, error) {
+	opts := objectstore.ListOptions{MaxKeys: 1000}
+	var keys []string
+	for {
+		s.cfg.Stats.incList()
+		page, err := s.cfg.Store.ListPrefixPage(ctx, protocol.OpenPrefix(s.cfg.Prefix), opts)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, page.Keys...)
+		if !page.IsTruncated || page.NextContinuationToken == "" {
+			return keys, nil
+		}
+		opts.ContinuationToken = page.NextContinuationToken
+	}
+}
+
 func (s *Server) handleSession(ctx context.Context, sessionID string) error {
 	var req protocol.OpenRequest
 	if err := s.getJSON(ctx, protocol.OpenKey(s.cfg.Prefix, sessionID), "open", sessionID, "control", &req); err != nil {
 		return err
 	}
-	if req.Version != protocol.Version || req.SessionID != sessionID {
-		return s.putOpenResult(ctx, sessionID, false, "invalid open request")
+	if req.Version != protocol.Version || req.SessionID != sessionID || protocol.ValidateChunkSize(req.MaxReceiveChunkSize) != nil {
+		err := s.putOpenResult(ctx, sessionID, false, "invalid open request")
+		s.cfg.Stats.incDelete()
+		_ = s.cfg.Store.DeleteObject(context.Background(), protocol.OpenKey(s.cfg.Prefix, sessionID))
+		return err
+	}
+	s.cfg.Stats.incDelete()
+	_ = s.cfg.Store.DeleteObject(context.Background(), protocol.OpenKey(s.cfg.Prefix, sessionID))
+	s2cMax, err := protocol.EffectiveSendChunkSize(s.cfg.ChunkSize, req.MaxReceiveChunkSize)
+	if err != nil {
+		return s.putOpenResult(ctx, sessionID, false, "invalid receive chunk limit")
 	}
 	dialCtx, cancel := context.WithTimeout(ctx, s.ConnectTimeout)
 	defer cancel()
@@ -201,14 +251,17 @@ func (s *Server) handleSession(ctx context.Context, sessionID string) error {
 	}
 	sessionCtx, cancelSession := context.WithCancel(ctx)
 	defer cancelSession()
+	sessionCfg := s.cfg
+	sessionCfg.ChunkSize = s2cMax
+	activity := newActivitySignal()
 	errCh := make(chan error, 2)
 	go func() {
-		err := s.streamFromStore(sessionCtx, sessionID, DirectionC2S, SideClient, conn, s.MaxBytesPerSession)
+		err := streamFromStore(sessionCtx, sessionCfg, sessionID, DirectionC2S, SideClient, conn, s.MaxBytesPerSession, activity)
 		closeWrite(conn)
 		errCh <- err
 	}()
 	go func() {
-		errCh <- s.streamToStore(sessionCtx, sessionID, DirectionS2C, SideServer, conn, s.MaxBytesPerSession)
+		errCh <- streamToStore(sessionCtx, sessionCfg, sessionID, DirectionS2C, SideServer, conn, s.MaxBytesPerSession, activity)
 	}()
 	var first error
 	for i := 0; i < 2; i++ {
@@ -217,8 +270,6 @@ func (s *Server) handleSession(ctx context.Context, sessionID string) error {
 			cancelSession()
 		}
 	}
-	s.cfg.Stats.incDelete()
-	_ = s.cfg.Store.DeleteObject(context.Background(), protocol.OpenKey(s.cfg.Prefix, sessionID))
 	return first
 }
 
@@ -247,11 +298,12 @@ func (s *Server) dialTarget(ctx context.Context, target protocol.Target) (net.Co
 
 func (s *Server) putOpenResult(ctx context.Context, sessionID string, accepted bool, msg string) error {
 	res := protocol.OpenResult{
-		Version:   protocol.Version,
-		SessionID: sessionID,
-		Accepted:  accepted,
-		Error:     msg,
-		CreatedAt: time.Now().UTC(),
+		Version:             protocol.Version,
+		SessionID:           sessionID,
+		Accepted:            accepted,
+		Error:               msg,
+		MaxReceiveChunkSize: s.cfg.ChunkSize,
+		CreatedAt:           time.Now().UTC(),
 	}
 	return s.putJSON(ctx, protocol.OpenResultKey(s.cfg.Prefix, sessionID), "open-result", sessionID, "control", res)
 }
@@ -320,29 +372,31 @@ func waitJSON(ctx context.Context, cfg Config, key, typ, sessionID, direction st
 }
 
 func (c *Client) streamToStore(ctx context.Context, sessionID, direction, side string, r io.Reader, maxBytes int64) error {
-	return streamToStore(ctx, c.cfg, sessionID, direction, side, r, maxBytes)
+	return streamToStore(ctx, c.cfg, sessionID, direction, side, r, maxBytes, nil)
 }
 
 func (s *Server) streamToStore(ctx context.Context, sessionID, direction, side string, r io.Reader, maxBytes int64) error {
-	return streamToStore(ctx, s.cfg, sessionID, direction, side, r, maxBytes)
+	return streamToStore(ctx, s.cfg, sessionID, direction, side, r, maxBytes, nil)
 }
 
-func streamToStore(ctx context.Context, cfg Config, sessionID, direction, side string, r io.Reader, maxBytes int64) error {
-	buf := make([]byte, cfg.ChunkSize)
+func streamToStore(ctx context.Context, cfg Config, sessionID, direction, side string, r io.Reader, maxBytes int64, activity *activitySignal) error {
+	aggregator := Aggregator{MaxBytes: cfg.ChunkSize, FlushDelay: cfg.FlushDelay}
+	window := &SendWindow{}
 	var seq uint64
 	var sent int64
 	for {
-		n, readErr := r.Read(buf)
-		if n > 0 {
-			if maxBytes > 0 && sent+int64(n) > maxBytes {
+		read, readErr := aggregator.Read(ctx, r)
+		if len(read.Data) > 0 {
+			cfg.Stats.recordAggregation(read.Reason, read.SocketReads)
+			notifyActivity(activity)
+			if maxBytes > 0 && sent+int64(len(read.Data)) > maxBytes {
 				_ = putClose(ctx, cfg, sessionID, side, "max bytes per session exceeded")
 				return fmt.Errorf("max bytes per session exceeded")
 			}
-			if err := waitWindow(ctx, cfg, sessionID, direction, seq); err != nil {
+			if err := waitWindow(ctx, cfg, sessionID, direction, seq, window); err != nil {
 				return err
 			}
-			plain := append([]byte(nil), buf[:n]...)
-			sealed, err := cfg.Codec.Seal("data", sessionID, direction, seq, plain)
+			sealed, err := cfg.Codec.SealData(sessionID, direction, seq, read.Data)
 			if err != nil {
 				return err
 			}
@@ -350,12 +404,13 @@ func streamToStore(ctx context.Context, cfg Config, sessionID, direction, side s
 			if err := cfg.Store.PutObject(ctx, protocol.DataKey(cfg.Prefix, direction, sessionID, seq), sealed, objectstore.PutOptions{ContentType: "application/octet-stream"}); err != nil {
 				return err
 			}
+			notifyActivity(activity)
 			if seq == 0 {
 				cfg.Stats.recordFirstData(sessionID, direction, time.Now())
 			}
-			cfg.Stats.incChunksSent(n, len(sealed))
+			cfg.Stats.incChunksSent(len(read.Data), len(sealed))
 			seq++
-			sent += int64(n)
+			sent += int64(len(read.Data))
 		}
 		if readErr == io.EOF {
 			return putClose(ctx, cfg, sessionID, side, "")
@@ -368,28 +423,31 @@ func streamToStore(ctx context.Context, cfg Config, sessionID, direction, side s
 }
 
 func (c *Client) streamFromStore(ctx context.Context, sessionID, direction, peerSide string, w io.Writer, maxBytes int64) error {
-	return streamFromStore(ctx, c.cfg, sessionID, direction, peerSide, w, maxBytes)
+	return streamFromStore(ctx, c.cfg, sessionID, direction, peerSide, w, maxBytes, nil)
 }
 
 func (s *Server) streamFromStore(ctx context.Context, sessionID, direction, peerSide string, w io.Writer, maxBytes int64) error {
-	return streamFromStore(ctx, s.cfg, sessionID, direction, peerSide, w, maxBytes)
+	return streamFromStore(ctx, s.cfg, sessionID, direction, peerSide, w, maxBytes, nil)
 }
 
-func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peerSide string, w io.Writer, maxBytes int64) error {
+func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peerSide string, w io.Writer, maxBytes int64, activity *activitySignal) error {
 	var seq uint64
 	var lastAck uint64
 	var received int64
 	delay := cfg.PollMin
 	deadline := time.Now().Add(cfg.IdleTimeout)
-	closeCheckEvery := 4
-	missesSinceCloseCheck := closeCheckEvery
+	closeCheckEvery := cfg.CloseCheckAfterMisses
+	if closeCheckEvery <= 0 {
+		closeCheckEvery = defaultCloseCheckAfterMisses
+	}
+	missesSinceCloseCheck := 0
 	ackEvery := ackInterval(cfg.WindowChunks)
 	for {
 		key := protocol.DataKey(cfg.Prefix, direction, sessionID, seq)
 		cfg.Stats.incGet()
 		data, err := cfg.Store.GetObject(ctx, key)
 		if err == nil {
-			plain, err := cfg.Codec.Open("data", sessionID, direction, seq, data)
+			plain, err := cfg.Codec.OpenData(sessionID, direction, seq, data)
 			if err != nil {
 				return err
 			}
@@ -400,6 +458,7 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 				return err
 			}
 			cfg.Stats.incChunksReceived(len(plain), len(data))
+			notifyActivity(activity)
 			received += int64(len(plain))
 			seq++
 			if seq-lastAck >= ackEvery {
@@ -407,10 +466,11 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 					return err
 				}
 				lastAck = seq
+				notifyActivity(activity)
 			}
 			delay = cfg.PollMin
 			deadline = time.Now().Add(cfg.IdleTimeout)
-			missesSinceCloseCheck = closeCheckEvery
+			missesSinceCloseCheck = 0
 			continue
 		}
 		if !objectstore.IsNotFound(err) {
@@ -422,29 +482,32 @@ func streamFromStore(ctx context.Context, cfg Config, sessionID, direction, peer
 			if closed, err := closeExists(ctx, cfg, sessionID, peerSide); err != nil {
 				return err
 			} else if closed {
-				if seq > lastAck {
-					if err := putAck(ctx, cfg, sessionID, direction, seq); err != nil {
-						return err
-					}
-				}
 				return nil
 			}
 		}
 		if time.Now().After(deadline) {
 			return fmt.Errorf("idle timeout waiting for %s seq %d", direction, seq)
 		}
-		if err := sleep(ctx, delay); err != nil {
+		woke, err := sleepOrActivity(ctx, delay, cfg.ActivePollDuration, activity)
+		if err != nil {
 			return err
 		}
-		delay = nextDelay(delay, cfg.PollMax)
+		if woke {
+			delay = cfg.PollMin
+		} else {
+			delay = nextDelay(delay, cfg.PollMax)
+		}
 	}
 }
 
-func waitWindow(ctx context.Context, cfg Config, sessionID, direction string, seq uint64) error {
+func waitWindow(ctx context.Context, cfg Config, sessionID, direction string, seq uint64, window *SendWindow) error {
 	if cfg.WindowChunks == 0 {
 		return nil
 	}
-	if seq < cfg.WindowChunks {
+	if window == nil {
+		window = &SendWindow{}
+	}
+	if seq < window.AckedNextSeq+cfg.WindowChunks {
 		return nil
 	}
 	delay := cfg.PollMin
@@ -453,7 +516,10 @@ func waitWindow(ctx context.Context, cfg Config, sessionID, direction string, se
 		if err != nil {
 			return err
 		}
-		if seq < next+cfg.WindowChunks {
+		if next > window.AckedNextSeq {
+			window.AckedNextSeq = next
+		}
+		if seq < window.AckedNextSeq+cfg.WindowChunks {
 			return nil
 		}
 		if err := sleep(ctx, delay); err != nil {
@@ -521,6 +587,15 @@ func withDefaults(cfg Config) Config {
 	if cfg.ChunkSize <= 0 {
 		cfg.ChunkSize = 64 * 1024
 	}
+	if cfg.ChunkSize < protocol.MinChunkSize {
+		cfg.ChunkSize = protocol.MinChunkSize
+	}
+	if cfg.ChunkSize > protocol.MaxChunkSize {
+		cfg.ChunkSize = protocol.MaxChunkSize
+	}
+	if cfg.FlushDelay < 0 {
+		cfg.FlushDelay = 0
+	}
 	if cfg.PollMin <= 0 {
 		cfg.PollMin = 50 * time.Millisecond
 	}
@@ -532,6 +607,15 @@ func withDefaults(cfg Config) Config {
 	}
 	if cfg.WindowChunks == 0 {
 		cfg.WindowChunks = 16
+	}
+	if cfg.CloseCheckAfterMisses <= 0 {
+		cfg.CloseCheckAfterMisses = defaultCloseCheckAfterMisses
+	}
+	if cfg.ActivePollDuration < 0 {
+		cfg.ActivePollDuration = 0
+	}
+	if cfg.ActivePollDuration == 0 {
+		cfg.ActivePollDuration = defaultActivePollDuration
 	}
 	if cfg.IdleTimeout <= 0 {
 		cfg.IdleTimeout = 2 * time.Minute

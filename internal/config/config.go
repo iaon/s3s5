@@ -11,21 +11,24 @@ import (
 )
 
 type Common struct {
-	Provider         string
-	Bucket           string
-	Prefix           string
-	Region           string
-	Endpoint         string
-	ForcePathStyle   bool
-	PSKEnv           string
-	PSK              string
-	ChunkSize        int
-	PollMin          time.Duration
-	PollMax          time.Duration
-	WindowChunks     uint64
-	IdleTimeout      time.Duration
-	LogLevel         string
-	InsecureNoCrypto bool
+	Provider              string
+	Bucket                string
+	Prefix                string
+	Region                string
+	Endpoint              string
+	ForcePathStyle        bool
+	PSKEnv                string
+	PSK                   string
+	ChunkSize             int
+	FlushDelay            time.Duration
+	PollMin               time.Duration
+	PollMax               time.Duration
+	ActivePollDuration    time.Duration
+	WindowChunks          uint64
+	CloseCheckAfterMisses int
+	IdleTimeout           time.Duration
+	LogLevel              string
+	InsecureNoCrypto      bool
 }
 
 func AddCommonFlags(fs *flag.FlagSet, c *Common) {
@@ -37,9 +40,12 @@ func AddCommonFlags(fs *flag.FlagSet, c *Common) {
 	fs.BoolVar(&c.ForcePathStyle, "force-path-style", getenvBool("S3S5_FORCE_PATH_STYLE", false), "use path-style S3 URLs")
 	fs.StringVar(&c.PSKEnv, "psk-env", "S3S5_PSK", "environment variable containing the pre-shared key")
 	fs.IntVar(&c.ChunkSize, "chunk-size", getenvInt("S3S5_CHUNK_SIZE", 64*1024), "data chunk size in bytes")
+	fs.DurationVar(&c.FlushDelay, "flush-delay", getenvDuration("S3S5_FLUSH_DELAY", 10*time.Millisecond), "maximum aggregation delay after first byte; 0 disables waiting")
 	fs.DurationVar(&c.PollMin, "poll-min", getenvDuration("S3S5_POLL_MIN", 50*time.Millisecond), "minimum polling delay")
 	fs.DurationVar(&c.PollMax, "poll-max", getenvDuration("S3S5_POLL_MAX", 2*time.Second), "maximum polling delay")
+	fs.DurationVar(&c.ActivePollDuration, "active-poll-duration", getenvDuration("S3S5_ACTIVE_POLL_DURATION", 500*time.Millisecond), "duration to reset receive polling after local activity")
 	fs.Uint64Var(&c.WindowChunks, "window-chunks", getenvUint64("S3S5_WINDOW_CHUNKS", 16), "max unacknowledged chunks per direction")
+	fs.IntVar(&c.CloseCheckAfterMisses, "close-check-after-misses", getenvInt("S3S5_CLOSE_CHECK_AFTER_MISSES", 4), "data GET misses before checking peer close marker")
 	fs.DurationVar(&c.IdleTimeout, "idle-timeout", getenvDuration("S3S5_IDLE_TIMEOUT", 2*time.Minute), "idle session timeout")
 	fs.StringVar(&c.LogLevel, "log-level", getenv("S3S5_LOG_LEVEL", "info"), "log level")
 	fs.BoolVar(&c.InsecureNoCrypto, "insecure-no-crypto", false, "disable payload encryption for local development only")
@@ -61,8 +67,17 @@ func (c *Common) Finalize(requireBucket bool) error {
 	if c.ChunkSize <= 0 {
 		return errors.New("--chunk-size must be positive")
 	}
+	if c.ChunkSize < 1024 || c.ChunkSize > 16*1024*1024 {
+		return errors.New("--chunk-size must be between 1024 and 16777216")
+	}
+	if c.FlushDelay < 0 || c.ActivePollDuration < 0 {
+		return errors.New("durations must not be negative")
+	}
 	if c.WindowChunks == 0 {
 		return errors.New("--window-chunks must be positive")
+	}
+	if c.CloseCheckAfterMisses <= 0 {
+		return errors.New("--close-check-after-misses must be positive")
 	}
 	if c.PollMin <= 0 || c.PollMax <= 0 || c.PollMin > c.PollMax {
 		return errors.New("poll delays must be positive and poll-min must be <= poll-max")

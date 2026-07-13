@@ -108,3 +108,19 @@ go run ./cmd/s3s5-perf run -profile real-s3 -real-s3-opt-in -out benchmarks/resu
 Provider presets match the rest of the project: `aws`, `yandex`, `minio`, and
 `custom`. Credentials are read from environment variables and are never written
 to JSON or Markdown output.
+
+## P1 Results
+
+P1 optimization runs use separate result names so the P0 baseline remains
+available:
+
+```text
+benchmarks/results/p1-final-memory.json
+benchmarks/results/p1-final-simulated-s3.json
+benchmarks/reports/p1-v1-optimizations.md
+```
+
+P1 results include the configured chunk size, flush delay, polling values,
+active poll duration, close-check threshold, and window size. The protocol is
+wire-incompatible with pre-P1 clients and servers because directional chunk
+limits are mandatory and data objects use a binary envelope.

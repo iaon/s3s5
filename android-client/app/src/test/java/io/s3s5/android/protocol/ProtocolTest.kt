@@ -28,4 +28,12 @@ class ProtocolTest {
         val id = Protocol.newSessionId()
         assertTrue(id.matches(Regex("[0-9a-f]{32}")))
     }
+
+    @Test
+    fun chunkLimitsAreValidated() {
+        Protocol.validateChunkSize(MIN_CHUNK_SIZE)
+        Protocol.validateChunkSize(MAX_CHUNK_SIZE)
+        assertEquals(4096, Protocol.effectiveSendChunkSize(8192, 4096))
+        assertEquals(4096, Protocol.effectiveSendChunkSize(4096, 8192))
+    }
 }

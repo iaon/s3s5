@@ -14,6 +14,13 @@ data class PutOptions(
 
 data class ListOptions(
     val maxKeys: Int = 0,
+    val continuationToken: String = "",
+)
+
+data class ListPage(
+    val keys: List<String>,
+    val isTruncated: Boolean = false,
+    val nextContinuationToken: String = "",
 )
 
 data class ObjectInfo(
@@ -27,6 +34,7 @@ interface ObjectStore {
     suspend fun getObject(key: String): ByteArray
     suspend fun headObject(key: String): ObjectInfo
     suspend fun listPrefix(prefix: String, options: ListOptions = ListOptions()): List<String>
+    suspend fun listPrefixPage(prefix: String, options: ListOptions = ListOptions()): ListPage
     suspend fun deleteObject(key: String)
 }
 
@@ -73,6 +81,11 @@ class CountingObjectStore(private val delegate: ObjectStore) : ObjectStore {
         return delegate.listPrefix(prefix, options)
     }
 
+    override suspend fun listPrefixPage(prefix: String, options: ListOptions): ListPage {
+        listCount.incrementAndGet()
+        return delegate.listPrefixPage(prefix, options)
+    }
+
     override suspend fun deleteObject(key: String) {
         deleteCount.incrementAndGet()
         delegate.deleteObject(key)
@@ -100,15 +113,21 @@ class MemoryObjectStore : ObjectStore {
         ObjectInfo(key = key, size = entry.data.size.toLong(), metadata = entry.metadata)
     }
 
-    override suspend fun listPrefix(prefix: String, options: ListOptions): List<String> = mutex.withLock {
+    override suspend fun listPrefix(prefix: String, options: ListOptions): List<String> =
+        listPrefixPage(prefix, options).keys
+
+    override suspend fun listPrefixPage(prefix: String, options: ListOptions): ListPage = mutex.withLock {
         val keys = objects.keys
             .asSequence()
             .filter { it.startsWith(prefix) }
             .sorted()
-        if (options.maxKeys > 0) {
-            keys.take(options.maxKeys).toList()
+            .dropWhile { options.continuationToken.isNotEmpty() && it <= options.continuationToken }
+            .toList()
+        if (options.maxKeys > 0 && keys.size > options.maxKeys) {
+            val page = keys.take(options.maxKeys)
+            ListPage(keys = page, isTruncated = true, nextContinuationToken = page.last())
         } else {
-            keys.toList()
+            ListPage(keys = keys)
         }
     }
 

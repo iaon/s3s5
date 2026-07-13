@@ -11,3 +11,4 @@
 /android-client/.gradle/
 /android-client/app/build/
 *.log
+/test.sh

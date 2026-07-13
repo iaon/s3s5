@@ -60,10 +60,15 @@ func (s *Store) HeadObject(ctx context.Context, key string) (objectstore.ObjectI
 }
 
 func (s *Store) ListPrefix(ctx context.Context, prefix string, opts objectstore.ListOptions) ([]string, error) {
+	page, err := s.ListPrefixPage(ctx, prefix, opts)
+	return page.Keys, err
+}
+
+func (s *Store) ListPrefixPage(ctx context.Context, prefix string, opts objectstore.ListOptions) (objectstore.ListPage, error) {
 	if err := s.wait(ctx, s.Profile.ListDelay); err != nil {
-		return nil, err
+		return objectstore.ListPage{}, err
 	}
-	return s.Next.ListPrefix(ctx, prefix, opts)
+	return s.Next.ListPrefixPage(ctx, prefix, opts)
 }
 
 func (s *Store) DeleteObject(ctx context.Context, key string) error {

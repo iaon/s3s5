@@ -6,6 +6,8 @@ import java.time.Instant
 import java.util.Locale
 
 const val VERSION = 1
+const val MIN_CHUNK_SIZE = 1024
+const val MAX_CHUNK_SIZE = 16 * 1024 * 1024
 
 enum class AddressType(val wireName: String) {
     IPV4("ipv4"),
@@ -29,6 +31,7 @@ data class OpenRequest(
     val version: Int = VERSION,
     val sessionId: String,
     val target: Target,
+    val maxReceiveChunkSize: Int = 64 * 1024,
     val createdAt: String = Instant.now().toString(),
 )
 
@@ -37,6 +40,7 @@ data class OpenResult(
     val sessionId: String,
     val accepted: Boolean,
     val error: String = "",
+    val maxReceiveChunkSize: Int,
     val createdAt: String = Instant.now().toString(),
 )
 
@@ -106,6 +110,7 @@ object Protocol {
             .put("version", value.version)
             .put("session_id", value.sessionId)
             .put("target", target)
+            .put("max_receive_chunk_size", value.maxReceiveChunkSize)
             .put("created_at", value.createdAt)
             .toString()
             .toByteArray(Charsets.UTF_8)
@@ -113,11 +118,14 @@ object Protocol {
 
     fun unmarshalOpenResult(data: ByteArray): OpenResult {
         val json = JSONObject(String(data, Charsets.UTF_8))
+        val maxReceive = json.getInt("max_receive_chunk_size")
+        validateChunkSize(maxReceive)
         return OpenResult(
             version = json.getInt("version"),
             sessionId = json.getString("session_id"),
             accepted = json.getBoolean("accepted"),
             error = json.optString("error", ""),
+            maxReceiveChunkSize = maxReceive,
             createdAt = json.getString("created_at"),
         )
     }
@@ -153,6 +161,18 @@ object Protocol {
             json.put("reason", value.reason)
         }
         return json.toString().toByteArray(Charsets.UTF_8)
+    }
+
+    fun validateChunkSize(value: Int) {
+        require(value in MIN_CHUNK_SIZE..MAX_CHUNK_SIZE) {
+            "chunk size $value outside supported range $MIN_CHUNK_SIZE..$MAX_CHUNK_SIZE"
+        }
+    }
+
+    fun effectiveSendChunkSize(local: Int, peerReceive: Int): Int {
+        validateChunkSize(local)
+        validateChunkSize(peerReceive)
+        return minOf(local, peerReceive)
     }
 
     private fun key(prefix: String?, vararg parts: String): String =

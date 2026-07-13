@@ -5,6 +5,12 @@
 Release tags should use the same value with a `v` prefix. For example, when
 `VERSION` contains `0.1.0`, tag the release as `v0.1.0`.
 
+P1 optimization builds are wire-incompatible with earlier clients and servers
+even though the S3 key layout still uses `v1`. `OpenRequest` and `OpenResult`
+require `max_receive_chunk_size`, and encrypted data objects use a binary
+AES-GCM envelope instead of JSON/Base64. Roll out Go server, Go client, and
+Android client together.
+
 Releases are tag-driven. The normal flow is:
 
 1. Merge release-prep changes into `main`.

@@ -14,11 +14,13 @@ import io.s3s5.android.socks5.REPLY_SUCCEEDED
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.EOFException
 import java.io.InputStream
 import java.io.OutputStream
@@ -36,11 +38,27 @@ data class TunnelConfig(
     val stats: TunnelStats = TunnelStats(),
     val prefix: String = "s3s5",
     val chunkSize: Int = 64 * 1024,
+    val flushDelayMillis: Long = 10,
     val pollMinMillis: Long = 50,
     val pollMaxMillis: Long = 2_000,
+    val activePollDurationMillis: Long = 500,
     val windowChunks: Long = 16,
+    val closeCheckAfterMisses: Int = 4,
     val idleTimeoutMillis: Long = 120_000,
 )
+
+data class SendWindow(var ackedNextSeq: Long = 0)
+
+class ActivitySignal {
+    private val channel = Channel<Unit>(Channel.CONFLATED)
+
+    fun notifyActivity() {
+        channel.trySend(Unit)
+    }
+
+    suspend fun waitOrTimeout(delayMillis: Long): Boolean =
+        withTimeoutOrNull(delayMillis) { channel.receive() } != null
+}
 
 class TunnelClient(private val cfg: TunnelConfig) {
     suspend fun handleSocks(
@@ -52,6 +70,7 @@ class TunnelClient(private val cfg: TunnelConfig) {
         val request = OpenRequest(
             sessionId = sessionId,
             target = target,
+            maxReceiveChunkSize = cfg.chunkSize,
             createdAt = Instant.now().toString(),
         )
         try {
@@ -72,16 +91,18 @@ class TunnelClient(private val cfg: TunnelConfig) {
                 reply(REPLY_HOST_UNREACHABLE)
                 throw IllegalStateException("server rejected target: ${result.error}")
             }
+            val effectiveC2S = Protocol.effectiveSendChunkSize(cfg.chunkSize, result.maxReceiveChunkSize)
             reply(REPLY_SUCCEEDED)
             cfg.stats.incActive()
             try {
+                val activity = ActivitySignal()
                 coroutineScope {
                     val toStore = async {
-                        streamToStore(sessionId, DIRECTION_C2S, SIDE_CLIENT, socket.getInputStream())
+                        streamToStore(sessionId, DIRECTION_C2S, SIDE_CLIENT, socket.getInputStream(), effectiveC2S, activity)
                     }
                     val fromStore = async {
                         try {
-                            streamFromStore(sessionId, DIRECTION_S2C, SIDE_SERVER, socket.getOutputStream())
+                            streamFromStore(sessionId, DIRECTION_S2C, SIDE_SERVER, socket.getOutputStream(), activity)
                         } finally {
                             runCatching { socket.shutdownOutput() }
                         }
@@ -109,29 +130,52 @@ class TunnelClient(private val cfg: TunnelConfig) {
         direction: String,
         side: String,
         input: InputStream,
+        effectiveMaxChunk: Int = cfg.chunkSize,
+        activity: ActivitySignal? = null,
     ) = withContext(Dispatchers.IO) {
-        val buffer = ByteArray(cfg.chunkSize)
+        val buffer = ByteArray(effectiveMaxChunk)
+        val window = SendWindow()
         var seq = 0L
         while (isActive) {
-            val n = input.read(buffer)
-            if (n == -1) {
+            val plain = readAggregated(input, buffer)
+            if (plain == null) {
                 putClose(sessionId, side, "")
                 return@withContext
             }
-            if (n == 0) {
+            if (plain.isEmpty()) {
                 continue
             }
-            waitWindow(sessionId, direction, seq)
-            val plain = buffer.copyOf(n)
-            val sealed = cfg.codec.seal("data", sessionId, direction, seq, plain)
+            activity?.notifyActivity()
+            waitWindow(sessionId, direction, seq, window)
+            val sealed = cfg.codec.sealData(sessionId, direction, seq, plain)
             cfg.store.putObject(
                 Protocol.dataKey(cfg.prefix, direction, sessionId, seq),
                 sealed,
                 PutOptions(contentType = "application/octet-stream"),
             )
-            cfg.stats.incChunksSent(n)
+            activity?.notifyActivity()
+            cfg.stats.incChunksSent(plain.size)
             seq++
         }
+    }
+
+    private fun readAggregated(input: InputStream, buffer: ByteArray): ByteArray? {
+        val n = input.read(buffer)
+        if (n == -1) return null
+        if (n <= 0) return ByteArray(0)
+        if (cfg.flushDelayMillis <= 0 || n >= buffer.size) {
+            return buffer.copyOf(n)
+        }
+        Thread.sleep(cfg.flushDelayMillis)
+        var total = n
+        while (total < buffer.size) {
+            val available = input.available().coerceAtMost(buffer.size - total)
+            if (available <= 0) break
+            val more = input.read(buffer, total, available)
+            if (more <= 0) break
+            total += more
+        }
+        return buffer.copyOf(total)
     }
 
     private suspend fun streamFromStore(
@@ -139,13 +183,14 @@ class TunnelClient(private val cfg: TunnelConfig) {
         direction: String,
         peerSide: String,
         output: OutputStream,
+        activity: ActivitySignal? = null,
     ) = withContext(Dispatchers.IO) {
         var seq = 0L
         var lastAck = 0L
         var currentDelay = cfg.pollMinMillis
         var deadline = System.currentTimeMillis() + cfg.idleTimeoutMillis
-        val closeCheckEvery = 4
-        var missesSinceCloseCheck = closeCheckEvery
+        val closeCheckEvery = cfg.closeCheckAfterMisses.coerceAtLeast(1)
+        var missesSinceCloseCheck = 0
         val ackEvery = ackInterval(cfg.windowChunks)
         while (isActive) {
             val key = Protocol.dataKey(cfg.prefix, direction, sessionId, seq)
@@ -155,35 +200,34 @@ class TunnelClient(private val cfg: TunnelConfig) {
                 null
             }
             if (data != null) {
-                val plain = cfg.codec.open("data", sessionId, direction, seq, data)
+                val plain = cfg.codec.openData(sessionId, direction, seq, data)
                 output.write(plain)
                 output.flush()
                 cfg.stats.incChunksReceived(plain.size)
+                activity?.notifyActivity()
                 seq++
                 if (seq - lastAck >= ackEvery) {
                     putAck(sessionId, direction, seq)
+                    activity?.notifyActivity()
                     lastAck = seq
                 }
                 currentDelay = cfg.pollMinMillis
                 deadline = System.currentTimeMillis() + cfg.idleTimeoutMillis
-                missesSinceCloseCheck = closeCheckEvery
+                missesSinceCloseCheck = 0
                 continue
             }
             missesSinceCloseCheck++
             if (missesSinceCloseCheck >= closeCheckEvery) {
                 missesSinceCloseCheck = 0
                 if (closeExists(sessionId, peerSide)) {
-                    if (seq > lastAck) {
-                        putAck(sessionId, direction, seq)
-                    }
                     return@withContext
                 }
             }
             if (System.currentTimeMillis() > deadline) {
                 throw EOFException("idle timeout waiting for $direction seq $seq")
             }
-            delay(currentDelay)
-            currentDelay = nextDelay(currentDelay)
+            val woke = activity?.waitOrTimeout(currentDelay) == true
+            currentDelay = if (woke) cfg.pollMinMillis else nextDelay(currentDelay)
         }
     }
 
@@ -245,14 +289,17 @@ class TunnelClient(private val cfg: TunnelConfig) {
             0
         }
 
-    private suspend fun waitWindow(sessionId: String, direction: String, seq: Long) {
-        if (cfg.windowChunks == 0L || seq < cfg.windowChunks) {
+    private suspend fun waitWindow(sessionId: String, direction: String, seq: Long, window: SendWindow) {
+        if (cfg.windowChunks == 0L || seq < window.ackedNextSeq + cfg.windowChunks) {
             return
         }
         var currentDelay = cfg.pollMinMillis
         while (true) {
             val next = getAck(sessionId, direction)
-            if (seq < next + cfg.windowChunks) {
+            if (next > window.ackedNextSeq) {
+                window.ackedNextSeq = next
+            }
+            if (seq < window.ackedNextSeq + cfg.windowChunks) {
                 return
             }
             delay(currentDelay)

@@ -154,6 +154,41 @@ The generated report includes separate counts for:
 - operations per MiB
 - sealed/plaintext size ratio
 
+## P1 Optimization Notes
+
+P1 keeps the mailbox-session architecture but changes the v1 wire contract. Old clients and servers are not compatible with the P1 handshake or binary data envelope.
+
+Implemented optimization points:
+
+- cumulative ACK state is cached per session direction, reducing repeated ACK GETs after the initial window fills
+- final ACK writes after peer close are omitted when they can no longer unblock a sender
+- close marker HEAD checks run after `--close-check-after-misses` consecutive data GET misses
+- server open discovery uses paginated LIST and removes valid open objects as soon as they are accepted for handling
+- both sides negotiate mandatory directional plaintext chunk receive limits
+- small socket reads can be aggregated until `--chunk-size` or `--flush-delay`
+- encrypted data objects use a binary AES-GCM envelope instead of JSON/Base64
+- local activity wakes the opposite receive poller and resets polling backoff
+
+Relevant flags:
+
+```sh
+--chunk-size
+--flush-delay
+--active-poll-duration
+--close-check-after-misses
+--window-chunks
+--poll-min
+--poll-max
+```
+
+The P1 final benchmark artifacts are:
+
+```text
+benchmarks/results/p1-final-memory.json
+benchmarks/results/p1-final-simulated-s3.json
+benchmarks/reports/p1-v1-optimizations.md
+```
+
 Real S3 runs are opt-in only and require credentials in environment variables:
 
 ```sh

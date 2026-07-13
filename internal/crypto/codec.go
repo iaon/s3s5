@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -18,6 +19,8 @@ import (
 type Codec interface {
 	Seal(objectType, sessionID, direction string, seq uint64, plaintext []byte) ([]byte, error)
 	Open(objectType, sessionID, direction string, seq uint64, data []byte) ([]byte, error)
+	SealData(sessionID, direction string, seq uint64, plaintext []byte) ([]byte, error)
+	OpenData(sessionID, direction string, seq uint64, data []byte) ([]byte, error)
 	Enabled() bool
 }
 
@@ -28,6 +31,14 @@ func (NoopCodec) Seal(_, _, _ string, _ uint64, plaintext []byte) ([]byte, error
 }
 
 func (NoopCodec) Open(_, _, _ string, _ uint64, data []byte) ([]byte, error) {
+	return append([]byte(nil), data...), nil
+}
+
+func (NoopCodec) SealData(_, _ string, _ uint64, plaintext []byte) ([]byte, error) {
+	return append([]byte(nil), plaintext...), nil
+}
+
+func (NoopCodec) OpenData(_, _ string, _ uint64, data []byte) ([]byte, error) {
 	return append([]byte(nil), data...), nil
 }
 
@@ -44,6 +55,14 @@ type envelope struct {
 	Ciphertext string `json:"ciphertext"`
 }
 
+var dataMagic = [4]byte{'S', '5', 'D', '1'}
+
+const (
+	dataEnvelopeVersion = 1
+	dataAlgorithmAESGCM = 1
+	dataHeaderLen       = 12
+)
+
 func NewPSKCodec(psk string) (*PSKCodec, error) {
 	if len(psk) < 16 {
 		return nil, errors.New("S3S5_PSK must be at least 16 characters")
@@ -54,21 +73,64 @@ func NewPSKCodec(psk string) (*PSKCodec, error) {
 func (c *PSKCodec) Enabled() bool { return true }
 
 func (c *PSKCodec) Seal(objectType, sessionID, direction string, seq uint64, plaintext []byte) ([]byte, error) {
-	key := c.deriveKey(sessionID, direction)
-	block, err := aes.NewCipher(key)
+	return c.sealJSON(objectType, sessionID, direction, seq, plaintext)
+}
+
+func (c *PSKCodec) Open(objectType, sessionID, direction string, seq uint64, data []byte) ([]byte, error) {
+	return c.openJSON(objectType, sessionID, direction, seq, data)
+}
+
+func (c *PSKCodec) SealData(sessionID, direction string, seq uint64, plaintext []byte) ([]byte, error) {
+	nonce, ciphertext, err := c.sealRaw("data", sessionID, direction, seq, plaintext)
 	if err != nil {
 		return nil, err
 	}
-	gcm, err := cipher.NewGCM(block)
+	out := make([]byte, dataHeaderLen+len(nonce)+len(ciphertext))
+	copy(out[:4], dataMagic[:])
+	out[4] = dataEnvelopeVersion
+	out[5] = dataAlgorithmAESGCM
+	out[6] = byte(len(nonce))
+	out[7] = 0
+	binary.BigEndian.PutUint32(out[8:12], uint32(len(ciphertext)))
+	copy(out[dataHeaderLen:], nonce)
+	copy(out[dataHeaderLen+len(nonce):], ciphertext)
+	return out, nil
+}
+
+func (c *PSKCodec) OpenData(sessionID, direction string, seq uint64, data []byte) ([]byte, error) {
+	if len(data) < dataHeaderLen {
+		return nil, errors.New("truncated data crypto envelope")
+	}
+	if !bytes.Equal(data[:4], dataMagic[:]) {
+		return nil, errors.New("invalid data crypto envelope magic")
+	}
+	if data[4] != dataEnvelopeVersion {
+		return nil, errors.New("unsupported data crypto envelope version")
+	}
+	if data[5] != dataAlgorithmAESGCM {
+		return nil, errors.New("unsupported data crypto envelope algorithm")
+	}
+	nonceLen := int(data[6])
+	if nonceLen != 12 {
+		return nil, errors.New("invalid data crypto nonce size")
+	}
+	ctLen := int(binary.BigEndian.Uint32(data[8:12]))
+	if ctLen < 16 {
+		return nil, errors.New("invalid data crypto ciphertext size")
+	}
+	if len(data) != dataHeaderLen+nonceLen+ctLen {
+		return nil, errors.New("invalid data crypto envelope length")
+	}
+	nonce := data[dataHeaderLen : dataHeaderLen+nonceLen]
+	ciphertext := data[dataHeaderLen+nonceLen:]
+	return c.openRaw("data", sessionID, direction, seq, nonce, ciphertext)
+}
+
+func (c *PSKCodec) sealJSON(objectType, sessionID, direction string, seq uint64, plaintext []byte) ([]byte, error) {
+	nonce, ct, err := c.sealRaw(objectType, sessionID, direction, seq, plaintext)
 	if err != nil {
 		return nil, err
 	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-	aad := associatedData(objectType, sessionID, direction, seq)
-	ct := gcm.Seal(nil, nonce, plaintext, aad)
 	env := envelope{
 		Version:    1,
 		Algorithm:  "AES-256-GCM",
@@ -78,7 +140,7 @@ func (c *PSKCodec) Seal(objectType, sessionID, direction string, seq uint64, pla
 	return json.Marshal(env)
 }
 
-func (c *PSKCodec) Open(objectType, sessionID, direction string, seq uint64, data []byte) ([]byte, error) {
+func (c *PSKCodec) openJSON(objectType, sessionID, direction string, seq uint64, data []byte) ([]byte, error) {
 	var env envelope
 	if err := json.Unmarshal(data, &env); err != nil {
 		return nil, err
@@ -94,6 +156,29 @@ func (c *PSKCodec) Open(objectType, sessionID, direction string, seq uint64, dat
 	if err != nil {
 		return nil, err
 	}
+	return c.openRaw(objectType, sessionID, direction, seq, nonce, ct)
+}
+
+func (c *PSKCodec) sealRaw(objectType, sessionID, direction string, seq uint64, plaintext []byte) ([]byte, []byte, error) {
+	key := c.deriveKey(sessionID, direction)
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, nil, err
+	}
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, nil, err
+	}
+	aad := associatedData(objectType, sessionID, direction, seq)
+	ct := gcm.Seal(nil, nonce, plaintext, aad)
+	return nonce, ct, nil
+}
+
+func (c *PSKCodec) openRaw(objectType, sessionID, direction string, seq uint64, nonce, ct []byte) ([]byte, error) {
 	key := c.deriveKey(sessionID, direction)
 	block, err := aes.NewCipher(key)
 	if err != nil {

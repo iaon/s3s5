@@ -66,3 +66,35 @@ func TestPSKCodecRejectsMalformedEnvelopeWithoutPanic(t *testing.T) {
 		})
 	}
 }
+
+func TestPSKCodecBinaryDataEnvelopeRoundTripAndTamper(t *testing.T) {
+	codec, err := NewPSKCodec("0123456789abcdef0123456789abcdef")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain := bytes.Repeat([]byte("x"), 64*1024)
+	sealed, err := codec.SealData("session-a", "c2s", 7, plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(sealed, plain[:64]) {
+		t.Fatal("binary data envelope leaked plaintext")
+	}
+	if bytes.Contains(sealed, []byte("ciphertext")) {
+		t.Fatal("binary data envelope should not contain JSON field names")
+	}
+	got, err := codec.OpenData("session-a", "c2s", 7, sealed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, plain) {
+		t.Fatal("binary data round trip mismatch")
+	}
+	if _, err := codec.OpenData("session-a", "s2c", 7, sealed); err == nil {
+		t.Fatal("expected direction mismatch to fail")
+	}
+	sealed[len(sealed)-1] ^= 1
+	if _, err := codec.OpenData("session-a", "c2s", 7, sealed); err == nil {
+		t.Fatal("expected tampered binary data envelope to fail")
+	}
+}

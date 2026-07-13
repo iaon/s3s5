@@ -166,34 +166,42 @@ func (s *Store) HeadObject(ctx context.Context, key string) (objectstore.ObjectI
 }
 
 func (s *Store) ListPrefix(ctx context.Context, prefix string, opts objectstore.ListOptions) ([]string, error) {
+	page, err := s.ListPrefixPage(ctx, prefix, opts)
+	return page.Keys, err
+}
+
+func (s *Store) ListPrefixPage(ctx context.Context, prefix string, opts objectstore.ListOptions) (objectstore.ListPage, error) {
 	q := url.Values{}
 	q.Set("list-type", "2")
 	q.Set("prefix", prefix)
 	if opts.MaxKeys > 0 {
 		q.Set("max-keys", fmt.Sprintf("%d", opts.MaxKeys))
 	}
+	if opts.ContinuationToken != "" {
+		q.Set("continuation-token", opts.ContinuationToken)
+	}
 	req, err := s.newRequest(ctx, http.MethodGet, "", q, nil)
 	if err != nil {
-		return nil, err
+		return objectstore.ListPage{}, err
 	}
 	resp, err := s.do(req)
 	if err != nil {
-		return nil, err
+		return objectstore.ListPage{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, statusError(resp)
+		return objectstore.ListPage{}, statusError(resp)
 	}
 	var out listBucketResult
 	if err := xml.NewDecoder(resp.Body).Decode(&out); err != nil {
-		return nil, err
+		return objectstore.ListPage{}, err
 	}
 	keys := make([]string, 0, len(out.Contents))
 	for _, c := range out.Contents {
 		keys = append(keys, c.Key)
 	}
 	sort.Strings(keys)
-	return keys, nil
+	return objectstore.ListPage{Keys: keys, IsTruncated: out.IsTruncated, NextContinuationToken: out.NextContinuationToken}, nil
 }
 
 func (s *Store) DeleteObject(ctx context.Context, key string) error {
@@ -314,7 +322,9 @@ func (s *Store) sign(req *http.Request) error {
 }
 
 type listBucketResult struct {
-	Contents []struct {
+	IsTruncated           bool   `xml:"IsTruncated"`
+	NextContinuationToken string `xml:"NextContinuationToken"`
+	Contents              []struct {
 		Key string `xml:"Key"`
 	} `xml:"Contents"`
 }

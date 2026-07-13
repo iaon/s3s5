@@ -13,6 +13,11 @@ import (
 
 const Version = 1
 
+const (
+	MinChunkSize = 1024
+	MaxChunkSize = 16 * 1024 * 1024
+)
+
 type AddressType string
 
 const (
@@ -32,18 +37,20 @@ func (t Target) Address() string {
 }
 
 type OpenRequest struct {
-	Version   int       `json:"version"`
-	SessionID string    `json:"session_id"`
-	Target    Target    `json:"target"`
-	CreatedAt time.Time `json:"created_at"`
+	Version             int       `json:"version"`
+	SessionID           string    `json:"session_id"`
+	Target              Target    `json:"target"`
+	MaxReceiveChunkSize int       `json:"max_receive_chunk_size"`
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 type OpenResult struct {
-	Version   int       `json:"version"`
-	SessionID string    `json:"session_id"`
-	Accepted  bool      `json:"accepted"`
-	Error     string    `json:"error,omitempty"`
-	CreatedAt time.Time `json:"created_at"`
+	Version             int       `json:"version"`
+	SessionID           string    `json:"session_id"`
+	Accepted            bool      `json:"accepted"`
+	Error               string    `json:"error,omitempty"`
+	MaxReceiveChunkSize int       `json:"max_receive_chunk_size"`
+	CreatedAt           time.Time `json:"created_at"`
 }
 
 type Ack struct {
@@ -128,6 +135,29 @@ func Marshal(v any) ([]byte, error) {
 
 func Unmarshal(data []byte, v any) error {
 	return json.Unmarshal(data, v)
+}
+
+func ValidateChunkSize(n int) error {
+	if n < MinChunkSize {
+		return fmt.Errorf("chunk size %d below minimum %d", n, MinChunkSize)
+	}
+	if n > MaxChunkSize {
+		return fmt.Errorf("chunk size %d exceeds maximum %d", n, MaxChunkSize)
+	}
+	return nil
+}
+
+func EffectiveSendChunkSize(local, peerReceive int) (int, error) {
+	if err := ValidateChunkSize(local); err != nil {
+		return 0, err
+	}
+	if err := ValidateChunkSize(peerReceive); err != nil {
+		return 0, err
+	}
+	if local < peerReceive {
+		return local, nil
+	}
+	return peerReceive, nil
 }
 
 func key(prefix string, parts ...string) string {

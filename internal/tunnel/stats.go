@@ -19,6 +19,11 @@ type Stats struct {
 	listObjects    atomic.Uint64
 	deleteObjects  atomic.Uint64
 	activeSessions atomic.Int64
+	socketReads    atomic.Uint64
+	flushSize      atomic.Uint64
+	flushDeadline  atomic.Uint64
+	flushEOF       atomic.Uint64
+	flushError     atomic.Uint64
 	started        atomic.Uint64
 	opened         atomic.Uint64
 	rejected       atomic.Uint64
@@ -35,27 +40,32 @@ type Stats struct {
 }
 
 type StatsSnapshot struct {
-	ChunksSent          uint64
-	ChunksReceived      uint64
-	BytesSent           uint64
-	BytesReceived       uint64
-	SealedBytesSent     uint64
-	SealedBytesReceived uint64
-	PutObjects          uint64
-	GetObjects          uint64
-	HeadObjects         uint64
-	ListObjects         uint64
-	DeleteObjects       uint64
-	ActiveSessions      int64
-	SessionsStarted     uint64
-	SessionsOpened      uint64
-	SessionsRejected    uint64
-	SessionsCompleted   uint64
-	SessionsFailed      uint64
-	TimeToOpenResult    []time.Duration
-	SessionDurations    []time.Duration
-	TimeToFirstC2SData  []time.Duration
-	TimeToFirstS2CData  []time.Duration
+	ChunksSent               uint64
+	ChunksReceived           uint64
+	BytesSent                uint64
+	BytesReceived            uint64
+	SealedBytesSent          uint64
+	SealedBytesReceived      uint64
+	PutObjects               uint64
+	GetObjects               uint64
+	HeadObjects              uint64
+	ListObjects              uint64
+	DeleteObjects            uint64
+	ActiveSessions           int64
+	SocketReads              uint64
+	AggregationFlushSize     uint64
+	AggregationFlushDeadline uint64
+	AggregationFlushEOF      uint64
+	AggregationFlushError    uint64
+	SessionsStarted          uint64
+	SessionsOpened           uint64
+	SessionsRejected         uint64
+	SessionsCompleted        uint64
+	SessionsFailed           uint64
+	TimeToOpenResult         []time.Duration
+	SessionDurations         []time.Duration
+	TimeToFirstC2SData       []time.Duration
+	TimeToFirstS2CData       []time.Duration
 }
 
 func (s *Stats) Snapshot() StatsSnapshot {
@@ -69,27 +79,51 @@ func (s *Stats) Snapshot() StatsSnapshot {
 	timeToFirstS2CData := append([]time.Duration(nil), s.timeToFirstS2CData...)
 	s.mu.Unlock()
 	return StatsSnapshot{
-		ChunksSent:          s.chunksSent.Load(),
-		ChunksReceived:      s.chunksReceived.Load(),
-		BytesSent:           s.bytesSent.Load(),
-		BytesReceived:       s.bytesReceived.Load(),
-		SealedBytesSent:     s.sealedSent.Load(),
-		SealedBytesReceived: s.sealedReceived.Load(),
-		PutObjects:          s.putObjects.Load(),
-		GetObjects:          s.getObjects.Load(),
-		HeadObjects:         s.headObjects.Load(),
-		ListObjects:         s.listObjects.Load(),
-		DeleteObjects:       s.deleteObjects.Load(),
-		ActiveSessions:      s.activeSessions.Load(),
-		SessionsStarted:     s.started.Load(),
-		SessionsOpened:      s.opened.Load(),
-		SessionsRejected:    s.rejected.Load(),
-		SessionsCompleted:   s.completed.Load(),
-		SessionsFailed:      s.failed.Load(),
-		TimeToOpenResult:    timeToOpenResult,
-		SessionDurations:    sessionDurations,
-		TimeToFirstC2SData:  timeToFirstC2SData,
-		TimeToFirstS2CData:  timeToFirstS2CData,
+		ChunksSent:               s.chunksSent.Load(),
+		ChunksReceived:           s.chunksReceived.Load(),
+		BytesSent:                s.bytesSent.Load(),
+		BytesReceived:            s.bytesReceived.Load(),
+		SealedBytesSent:          s.sealedSent.Load(),
+		SealedBytesReceived:      s.sealedReceived.Load(),
+		PutObjects:               s.putObjects.Load(),
+		GetObjects:               s.getObjects.Load(),
+		HeadObjects:              s.headObjects.Load(),
+		ListObjects:              s.listObjects.Load(),
+		DeleteObjects:            s.deleteObjects.Load(),
+		ActiveSessions:           s.activeSessions.Load(),
+		SocketReads:              s.socketReads.Load(),
+		AggregationFlushSize:     s.flushSize.Load(),
+		AggregationFlushDeadline: s.flushDeadline.Load(),
+		AggregationFlushEOF:      s.flushEOF.Load(),
+		AggregationFlushError:    s.flushError.Load(),
+		SessionsStarted:          s.started.Load(),
+		SessionsOpened:           s.opened.Load(),
+		SessionsRejected:         s.rejected.Load(),
+		SessionsCompleted:        s.completed.Load(),
+		SessionsFailed:           s.failed.Load(),
+		TimeToOpenResult:         timeToOpenResult,
+		SessionDurations:         sessionDurations,
+		TimeToFirstC2SData:       timeToFirstC2SData,
+		TimeToFirstS2CData:       timeToFirstS2CData,
+	}
+}
+
+func (s *Stats) recordAggregation(reason FlushReason, socketReads int) {
+	if s == nil {
+		return
+	}
+	if socketReads > 0 {
+		s.socketReads.Add(uint64(socketReads))
+	}
+	switch reason {
+	case FlushSize:
+		s.flushSize.Add(1)
+	case FlushDeadline:
+		s.flushDeadline.Add(1)
+	case FlushEOF:
+		s.flushEOF.Add(1)
+	case FlushError:
+		s.flushError.Add(1)
 	}
 }
 

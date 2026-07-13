@@ -18,6 +18,33 @@ func TestKeysAndSequences(t *testing.T) {
 	}
 }
 
+func TestChunkSizeValidationAndEffectiveSendLimit(t *testing.T) {
+	for _, bad := range []int{0, -1, MinChunkSize - 1, MaxChunkSize + 1} {
+		if err := ValidateChunkSize(bad); err == nil {
+			t.Fatalf("ValidateChunkSize(%d) succeeded", bad)
+		}
+	}
+	for _, good := range []int{MinChunkSize, 64 * 1024, MaxChunkSize} {
+		if err := ValidateChunkSize(good); err != nil {
+			t.Fatalf("ValidateChunkSize(%d): %v", good, err)
+		}
+	}
+	got, err := EffectiveSendChunkSize(64*1024, 32*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 32*1024 {
+		t.Fatalf("effective = %d", got)
+	}
+	got, err = EffectiveSendChunkSize(32*1024, 64*1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != 32*1024 {
+		t.Fatalf("effective = %d", got)
+	}
+}
+
 func TestTargetIPv6JSON(t *testing.T) {
 	target := Target{Type: AddressIPv6, Host: "2001:db8::1", Port: 443}
 	data, err := Marshal(target)

@@ -20,4 +20,19 @@ class MemoryObjectStoreTest {
         store.deleteObject("p/a")
         assertEquals(listOf("p/b"), store.listPrefix("p/"))
     }
+
+    @Test
+    fun listPrefixPageUsesContinuationToken() = runTest {
+        val store = MemoryObjectStore()
+        repeat(5) { i -> store.putObject("p/%02d".format(i), byteArrayOf(i.toByte())) }
+        val first = store.listPrefixPage("p/", ListOptions(maxKeys = 2))
+        assertEquals(listOf("p/00", "p/01"), first.keys)
+        assertEquals(true, first.isTruncated)
+        val second = store.listPrefixPage("p/", ListOptions(maxKeys = 2, continuationToken = first.nextContinuationToken))
+        assertEquals(listOf("p/02", "p/03"), second.keys)
+        assertEquals(true, second.isTruncated)
+        val third = store.listPrefixPage("p/", ListOptions(maxKeys = 2, continuationToken = second.nextContinuationToken))
+        assertEquals(listOf("p/04"), third.keys)
+        assertEquals(false, third.isTruncated)
+    }
 }

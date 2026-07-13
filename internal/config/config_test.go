@@ -4,16 +4,17 @@ import "testing"
 
 func TestYandexProviderFinalizesEndpointAndRegion(t *testing.T) {
 	c := Common{
-		Provider:         "yc",
-		Bucket:           "bucket",
-		Prefix:           "prefix",
-		Region:           "ru-central1-a",
-		PSK:              "0123456789abcdef",
-		ChunkSize:        1,
-		PollMin:          1,
-		PollMax:          1,
-		WindowChunks:     1,
-		InsecureNoCrypto: true,
+		Provider:              "yc",
+		Bucket:                "bucket",
+		Prefix:                "prefix",
+		Region:                "ru-central1-a",
+		PSK:                   "0123456789abcdef",
+		ChunkSize:             1024,
+		PollMin:               1,
+		PollMax:               1,
+		WindowChunks:          1,
+		CloseCheckAfterMisses: 1,
+		InsecureNoCrypto:      true,
 	}
 	if err := c.Finalize(true); err != nil {
 		t.Fatal(err)
@@ -34,14 +35,15 @@ func TestYandexProviderFinalizesEndpointAndRegion(t *testing.T) {
 
 func TestYandexProviderAutoDetectedFromRegion(t *testing.T) {
 	c := Common{
-		Bucket:           "bucket",
-		Prefix:           "prefix",
-		Region:           "ru-central1-a",
-		ChunkSize:        1,
-		PollMin:          1,
-		PollMax:          1,
-		WindowChunks:     1,
-		InsecureNoCrypto: true,
+		Bucket:                "bucket",
+		Prefix:                "prefix",
+		Region:                "ru-central1-a",
+		ChunkSize:             1024,
+		PollMin:               1,
+		PollMax:               1,
+		WindowChunks:          1,
+		CloseCheckAfterMisses: 1,
+		InsecureNoCrypto:      true,
 	}
 	if err := c.Finalize(true); err != nil {
 		t.Fatal(err)

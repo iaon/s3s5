@@ -112,6 +112,25 @@ The code also tolerates missing objects during polling, which is important becau
 - ACK and close objects may be overwritten if that simplifies state progression
 - the `--insecure-no-crypto` mode is only for local tests
 - the server still needs an explicit allow policy: `--allow-target` or `--allow-unrestricted-egress`
+- P1 keeps the `v1` key layout but is wire-incompatible with older clients and servers because open handshake chunk limits are mandatory and data objects use a binary encryption envelope.
+
+## Protocol v1 P1 Extensions
+
+`OpenRequest` and `OpenResult` now both require `max_receive_chunk_size`.
+
+In `OpenRequest`, `max_receive_chunk_size` is the maximum plaintext data chunk the client accepts in the `s2c` direction. In `OpenResult`, it is the maximum plaintext data chunk the server accepts in the `c2s` direction. The effective send size is:
+
+```text
+min(local configured chunk-size, peer max_receive_chunk_size)
+```
+
+Valid chunk sizes are bounded by `MinChunkSize = 1024` and `MaxChunkSize = 16 MiB`. Missing, zero, negative, or oversized values are protocol errors. The limit is plaintext size before encryption and envelope overhead.
+
+Data object keys and sequence semantics are unchanged. ACK format is unchanged, but senders cache cumulative ACK state locally and only read ACK objects when the cached window is full.
+
+Data objects now use a compact binary AES-256-GCM envelope instead of JSON plus Base64. Control objects continue to use the JSON crypto envelope. The binary data envelope starts with `S5D1`, includes envelope version, algorithm id, nonce length, flags, ciphertext length, nonce, and ciphertext including the GCM tag. AAD still binds object type, session ID, direction, sequence, and protocol version.
+
+Upload uses size-or-deadline aggregation. `chunk-size` is the local desired maximum plaintext chunk, capped by the peer receive limit. `flush-delay=0` disables waiting for additional bytes and flushes each non-empty read immediately; positive values allow small reads to coalesce until size, deadline, EOF, error, or cancellation.
 
 ## Limitations
 

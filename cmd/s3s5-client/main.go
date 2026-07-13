@@ -48,15 +48,18 @@ func main() {
 	}
 	stats := &tunnel.Stats{}
 	client, err := tunnel.NewClient(tunnel.Config{
-		Store:        store,
-		Codec:        codec,
-		Stats:        stats,
-		Prefix:       common.Prefix,
-		ChunkSize:    common.ChunkSize,
-		PollMin:      common.PollMin,
-		PollMax:      common.PollMax,
-		WindowChunks: common.WindowChunks,
-		IdleTimeout:  common.IdleTimeout,
+		Store:                 store,
+		Codec:                 codec,
+		Stats:                 stats,
+		Prefix:                common.Prefix,
+		ChunkSize:             common.ChunkSize,
+		FlushDelay:            common.FlushDelay,
+		PollMin:               common.PollMin,
+		PollMax:               common.PollMax,
+		ActivePollDuration:    common.ActivePollDuration,
+		WindowChunks:          common.WindowChunks,
+		CloseCheckAfterMisses: common.CloseCheckAfterMisses,
+		IdleTimeout:           common.IdleTimeout,
 	})
 	if err != nil {
 		fatal(err)

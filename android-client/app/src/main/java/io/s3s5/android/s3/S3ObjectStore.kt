@@ -1,6 +1,7 @@
 package io.s3s5.android.s3
 
 import io.s3s5.android.objectstore.ListOptions
+import io.s3s5.android.objectstore.ListPage
 import io.s3s5.android.objectstore.ObjectInfo
 import io.s3s5.android.objectstore.ObjectNotFoundException
 import io.s3s5.android.objectstore.ObjectStore
@@ -81,12 +82,18 @@ class S3ObjectStore(
         }
     }
 
-    override suspend fun listPrefix(prefix: String, options: ListOptions): List<String> = withContext(Dispatchers.IO) {
+    override suspend fun listPrefix(prefix: String, options: ListOptions): List<String> =
+        listPrefixPage(prefix, options).keys
+
+    override suspend fun listPrefixPage(prefix: String, options: ListOptions): ListPage = withContext(Dispatchers.IO) {
         val query = buildMap {
             put("list-type", "2")
             put("prefix", prefix)
             if (options.maxKeys > 0) {
                 put("max-keys", options.maxKeys.toString())
+            }
+            if (options.continuationToken.isNotBlank()) {
+                put("continuation-token", options.continuationToken)
             }
         }
         val response = client.newCall(signedRequestBuilder("GET", "", query).get().build()).execute()
@@ -179,7 +186,7 @@ class S3ObjectStore(
         return builder.build()
     }
 
-    private fun parseListBucket(data: ByteArray): List<String> {
+    private fun parseListBucket(data: ByteArray): ListPage {
         val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(ByteArrayInputStream(data))
         val nodes = doc.getElementsByTagName("Contents")
         val keys = mutableListOf<String>()
@@ -188,7 +195,9 @@ class S3ObjectStore(
             val key = contents.getElementsByTagName("Key").item(0)?.textContent ?: continue
             keys.add(key)
         }
-        return keys.sorted()
+        val truncated = doc.getElementsByTagName("IsTruncated").item(0)?.textContent?.equals("true", ignoreCase = true) == true
+        val next = doc.getElementsByTagName("NextContinuationToken").item(0)?.textContent.orEmpty()
+        return ListPage(keys = keys.sorted(), isTruncated = truncated, nextContinuationToken = next)
     }
 
     private fun canonicalQuery(query: Map<String, String>): String =
