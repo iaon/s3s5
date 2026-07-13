@@ -80,7 +80,7 @@ jobs:
           (cd dist/github-release && sha256sum * > SHA256SUMS)
 
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.release.outputs.tag }}
           name: s3s5 ${{ steps.release.outputs.tag }}
